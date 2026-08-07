@@ -783,6 +783,19 @@ comprobar("la figura 8 existe en los cuatro formatos",
 # La figura 1 repitio durante varias rondas una correlacion superada, un efecto
 # de nivel anterior al centrado del tiempo y el nombre de un estimador retirado,
 # porque estaban escritos a mano dentro del guion. Ahora se leen de cifras.json.
+comprobar("la figura 9 existe en los cuatro formatos",
+          all(file.exists(file.path(PAPER_FIG, paste0("figure9_specificity",
+              c(".pdf", ".png", "_doc.pdf", "_doc.png"))))))
+
+# El relleno de la figura 9 debe seguir al valor p de CADA estimacion. Al
+# rellenar por nombre de dominio, el bulbar aparecia como si portara la
+# asociacion cuando su correlacion de rasgo es 0,013 con p = 0,83.
+comprobar("el relleno de la figura 9 sigue al valor p y no al nombre",
+          grepl("signif = if_else(p < 0.05", fig_src, fixed = TRUE))
+comprobar("la figura 9 muestra las dos cantidades por dominio, que divergen",
+          grepl("t09_dominios_entre.csv", fig_src, fixed = TRUE) &&
+            grepl("t09_dominios_rasgo.csv", fig_src, fixed = TRUE))
+
 comprobar("el guion de figuras lee las cifras del JSON",
           grepl("cifras.json", fig_src, fixed = TRUE))
 # El Metodo dice que esa cantidad no es la formula g. Ninguna figura puede

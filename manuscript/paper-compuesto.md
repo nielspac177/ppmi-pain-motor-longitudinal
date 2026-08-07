@@ -176,7 +176,7 @@ Conditioning on the continuous phenotype axis attenuated the stable between-pers
 
 ### The covariation is carried by specific motor domains and not by tremor
 
-We decomposed the MDS-UPDRS Part III into five domains that sum exactly to the total. The between-person association with pain was present for every domain except tremor: bradykinesia 0.169 SD (p = <0.001), axial 0.187 (p = <0.001), rigidity 0.142 (p = <0.001), bulbar 0.141 (p = <0.001), and tremor 0.005 (95% CI -0.071 to 0.080, p = 0.905).
+We decomposed the MDS-UPDRS Part III into five domains that sum exactly to the total. Figure 9 shows this decomposition alongside the two comparisons that bear on specificity. The between-person association with pain was present for every domain except tremor: bradykinesia 0.169 SD (p = <0.001), axial 0.187 (p = <0.001), rigidity 0.142 (p = <0.001), bulbar 0.141 (p = <0.001), and tremor 0.005 (95% CI -0.071 to 0.080, p = 0.905).
 
 The contrast between the bradykinesia-rigidity axis and tremor, estimated within the same patients and the same instrument, was 0.172 (95% CI 0.073 to 0.271, p = 0.002). Because the comparison is internal to the scale, shared method variance cannot account for it. Fitting the random-intercept model separately by domain reproduced the two ends of the ordering, with the trait correlation highest for the axial domain (r = 0.253, p = 0.002) and null for tremor (r = 0.035, p = 0.578). It did not reproduce the middle: the bulbar domain fell from 0.141 to r = 0.013 (p = 0.831), below tremor. That is informative rather than incidental, since bulbar signs are the domain most likely to be carried by a general severity factor rather than by anything specific.
 

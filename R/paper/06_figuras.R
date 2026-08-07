@@ -539,5 +539,140 @@ guardar(f8,
              theme = tema()),
         "figure8_two_explanations", 9.2, 4.4)
 
+# =============================================================================
+# FIGURE 9 — What the covariation is made of, and what it is not specific to
+# =============================================================================
+# Las tres lineas que sostienen el reencuadre del articulo estaban solo en
+# tablas, que es donde peor se leen: el argumento es comparativo y una tabla
+# obliga al lector a hacer la comparacion de cabeza.
+#
+# Los intervalos de los paneles A y C se derivan del valor p, porque las tablas
+# de origen guardan r y p pero no el error estandar. Es una aproximacion normal
+# y se declara en el pie. El panel B trae error estandar propio y no lo necesita.
+ee_de_p <- function(r, p) abs(r) / abs(qnorm(pmax(pmin(p, 0.999), 1e-12) / 2))
+
+# El panel A lleva LAS DOS cantidades por dominio, no una. El texto sostiene que
+# la divergencia del bulbar (asociacion entre personas 0,141 frente a
+# correlacion de rasgo 0,013) es informativa y no incidental, asi que la figura
+# tiene que enseñarla en lugar de elegir la serie que queda ordenada. Son dos
+# parametros distintos y el pie lo dice.
+ETQ_DOM <- c(rigidez = "Rigidity", bradicinesia = "Bradykinesia", axial = "Axial",
+             bulbar = "Bulbar", temblor = "Tremor",
+             `TOTAL (referencia)` = "Total MDS-UPDRS III")
+
+dom_r <- T("t09_dominios_rasgo.csv") |>
+  mutate(ee = ee_de_p(r_rasgo, p),
+         est = r_rasgo, lo = est - 1.96 * ee, hi = est + 1.96 * ee,
+         serie = "Trait correlation (RI-CLPM)") |>
+  select(dominio, est, lo, hi, p, serie)
+
+dom_b <- T("t09_dominios_entre.csv") |>
+  transmute(dominio, est = beta_de, lo = ic_bajo, hi = ic_alto, p,
+            serie = "Between-person association")
+
+orden <- dom_b |> arrange(est) |> pull(dominio)
+dom <- bind_rows(dom_b, dom_r) |>
+  mutate(etiqueta = factor(unname(ETQ_DOM[dominio]),
+                           levels = unname(ETQ_DOM[orden])),
+         serie = factor(serie, levels = c("Between-person association",
+                                          "Trait correlation (RI-CLPM)")),
+         # El relleno sigue al valor p de CADA estimacion, no a un nombre fijo.
+         # Rellenarlo por dominio hacia que el bulbar apareciera como si portara
+         # la asociacion cuando su correlacion de rasgo es 0,013.
+         signif = if_else(p < 0.05, "si", "no"))
+
+fa9 <- ggplot(dom, aes(x = est, y = etiqueta, group = serie)) +
+  geom_vline(xintercept = 0, colour = GRIS, linewidth = 0.4, linetype = "22") +
+  geom_errorbarh(aes(xmin = lo, xmax = hi),
+                 position = position_dodge(width = 0.55),
+                 height = 0.10, linewidth = 0.4, colour = NEGRO) +
+  geom_point(aes(fill = signif, shape = serie),
+             position = position_dodge(width = 0.55),
+             size = 2.5, colour = NEGRO, stroke = 0.5) +
+  scale_fill_manual(values = c(si = MARINO, no = "white"), guide = "none") +
+  scale_shape_manual(values = c(`Between-person association` = 21,
+                                `Trait correlation (RI-CLPM)` = 24)) +
+  coord_cartesian(xlim = c(-0.16, 0.46)) +
+  labs(x = "Standardised association with pain", y = NULL,
+       subtitle = "A. Which motor domain carries it") +
+  tema() + theme(axis.text.y = element_text(size = BASE - 1),
+                 legend.position = "bottom", legend.title = element_blank(),
+                 legend.text = element_text(size = BASE - 2.5),
+                 legend.key.size = unit(0.3, "cm"))
+
+coh <- T("t10_multigrupo_rho.csv") |>
+  mutate(etiqueta = recode(cohorte, Parkinson = "Parkinson disease",
+                           Prodromica = "Prodromal", Controles = "Healthy controls"),
+         clase = if_else(cohorte == "Parkinson", "foco", "otra"),
+         etiqueta = factor(etiqueta,
+                           levels = c("Healthy controls", "Prodromal",
+                                      "Parkinson disease")))
+
+fb9 <- ggplot(coh, aes(x = r, y = etiqueta)) +
+  geom_vline(xintercept = 0, colour = GRIS, linewidth = 0.4, linetype = "22") +
+  geom_errorbarh(aes(xmin = ic_bajo, xmax = ic_alto), height = 0.12,
+                 linewidth = 0.45, colour = NEGRO) +
+  geom_point(aes(fill = clase), shape = 21, size = 2.8, colour = NEGRO, stroke = 0.5) +
+  scale_fill_manual(values = c(foco = MARINO, otra = "white")) +
+  coord_cartesian(xlim = c(-0.16, 0.46)) +
+  labs(x = "Trait correlation with pain", y = NULL,
+       subtitle = "B. Which cohort it occurs in") +
+  tema() + theme(axis.text.y = element_text(size = BASE - 1))
+
+nm <- T("t14_paralelos_parte1.csv") |>
+  mutate(etiqueta = recode(sintoma, dolor = "Pain", fatiga = "Fatigue",
+                           insomnio = "Insomnia", somnolencia = "Daytime sleepiness"),
+         clase = if_else(sintoma == "dolor", "foco", "otra")) |>
+  mutate(ee = ee_de_p(r_rasgo, p_rasgo),
+         lo = r_rasgo - 1.96 * ee, hi = r_rasgo + 1.96 * ee) |>
+  arrange(r_rasgo) |>
+  mutate(etiqueta = factor(etiqueta, levels = etiqueta))
+
+fc9 <- ggplot(nm, aes(x = r_rasgo, y = etiqueta)) +
+  geom_vline(xintercept = 0, colour = GRIS, linewidth = 0.4, linetype = "22") +
+  geom_errorbarh(aes(xmin = lo, xmax = hi), height = 0.12,
+                 linewidth = 0.45, colour = NEGRO) +
+  geom_point(aes(fill = clase), shape = 21, size = 2.8, colour = NEGRO, stroke = 0.5) +
+  scale_fill_manual(values = c(foco = MARINO, otra = "white")) +
+  coord_cartesian(xlim = c(-0.16, 0.46)) +
+  labs(x = "Trait correlation with motor severity", y = NULL,
+       subtitle = "C. Which non-motor symptom it involves") +
+  tema() + theme(axis.text.y = element_text(size = BASE - 1))
+
+f9 <- fa9 / fb9 / fc9 + plot_layout(heights = c(1.5, 1, 1.15))
+
+guardar(f9,
+        plot_annotation(
+          title = "Figure 9. What the covariation is made of, and what it is not specific to",
+          caption = env(paste(
+            "Navy fill marks an estimate whose own p value is below 0.05; open",
+            "markers do not clear it. In panels B and C the open markers are also",
+            "the comparators that decide whether the navy estimate is",
+            "distinctive. A. The five",
+            "domains sum exactly to the total. Circles are the between-person",
+            "regression coefficient and triangles the latent trait correlation;",
+            "these are different parameters and are shown together because they",
+            "disagree in one informative place. Both put the covariation in the",
+            "rigidity, bradykinesia and axial domains and neither finds it in",
+            "tremor, a contrast of", cif("dom_dif_est"), "within the same",
+            "patients and the same instrument (p =", paste0(cif("dom_dif_p"), ")."),
+            "They diverge on the bulbar domain, which the regression ranks with",
+            "the others and the trait model puts at zero, as a general severity",
+            "factor rather than anything specific would predict. Open markers",
+            "are estimates whose own p value exceeds 0.05.",
+            "B. The same model refitted in the prodromal and healthy control",
+            "cohorts gives correlations the data cannot distinguish from the",
+            "patient estimate (Wald test of equality across the three cohorts,",
+            "p =", paste0(cif("mg_wald_p"), ")."), "This does not demonstrate",
+            "equivalence; with", cif("coh_ctrl_n"), "controls the interval admits",
+            "both no correlation and a larger one than in patients. What it does",
+            "prevent is a claim of specificity. C. Pain does not stand out among",
+            "non-motor items measured the same way; insomnia covaries more",
+            "strongly. Intervals in panels A and C are derived from the reported",
+            "p values, since the source tables store the correlation and its p",
+            "value but not its standard error.")),
+          theme = tema()),
+        "figure9_specificity", 7.4, 7.2)
+
 cat(sprintf("\nDone. %d files in %s\n",
             length(list.files(PAPER_FIG)), PAPER_FIG))
