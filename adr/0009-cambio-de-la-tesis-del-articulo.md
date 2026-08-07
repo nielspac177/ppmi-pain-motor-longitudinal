@@ -1,9 +1,26 @@
 # ADR 0009: La tesis del artículo cambia
 
 - **Fecha:** 2026-08-07
-- **Estado:** Aceptada
+- **Estado:** Aceptada en su decisión, superada en tres de sus cifras (ver el aviso)
 - **Se apoya en:** [ADR 0006](0006-resolucion-de-la-discrepancia-direccional.md), [ADR 0008](0008-refutacion-y-preespecificacion.md), [ADR 0010](0010-atricion-y-confusion-variable-en-el-tiempo.md)
 - **Afecta a:** título, Resumen, Introducción, Discusión, Conclusiones
+
+> ## ⚠️ Aviso de cifras superadas
+>
+> La decisión de este registro sigue en pie: la tesis del artículo cambió, y por
+> los motivos que aquí se dan. Tres de las cifras con las que se argumentó ya no
+> son las vigentes, y se dejan en su sitio porque un registro de decisión es un
+> documento histórico y reescribirlo borraría la razón por la que se decidió.
+> Quien lo lea buscando una cifra debe ir a `outputs/paper/cifras.json`, no aquí.
+>
+> | Lo que dice este ADR | Lo vigente | Por qué cambió |
+> | --- | --- | --- |
+> | Nivel de +1,005 puntos (p = 0,002), ponderado +1,088 | +1,396 (p < 0,001) | El tiempo no estaba centrado, de modo que el efecto de nivel era en realidad la sección transversal basal. Corregido en el [ADR 0010](0010-atricion-y-confusion-variable-en-el-tiempo.md) |
+> | Correlación de rasgo r = 0,175 (p = 0,006) | r = 0,152 en el modelo libre, 0,171 ajustada | Las restricciones de igualdad entre olas se rechazan, así que el modelo primario pasó a ser el libre. Ver el [ADR 0006](0006-resolucion-de-la-discrepancia-direccional.md) |
+> | «Estimación g independiente en 1,65» | La cifra existe, la lectura no | No era la fórmula g: mantenía las covariables en sus valores observados en lugar de simularlas hacia adelante bajo cada régimen. Se renombró y se retiró la palabra «independiente», porque no era corroboración independiente de nada |
+>
+> Ninguna de las tres correcciones invierte la decisión. Las dos primeras la
+> refuerzan, y la tercera retira un apoyo que no era tal.
 
 ## Contexto
 

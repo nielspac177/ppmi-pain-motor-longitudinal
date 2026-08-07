@@ -1,10 +1,37 @@
 # ADR 0011: El mecanismo no es dopaminérgico, y no se puede afirmar que sea específico
 
 - **Fecha:** 2026-08-07
-- **Estado:** Aceptada
+- **Estado:** Aceptada en su decisión, con una afirmación retractada y un intervalo superado (ver el aviso)
 - **Supera a:** [ADR 0009](0009-cambio-de-la-tesis-del-articulo.md) en su lectura mecanística
 - **Afecta a:** título, Resumen, Resultados, Discusión, Conclusiones
 - **Código:** `R/paper/09_dominios.R`, `R/paper/10_controles_negativos.R`, `R/paper/11_hipotesis.R`
+
+> ## ⚠️ Aviso: una afirmación retractada y un intervalo superado
+>
+> La conclusión de este registro sigue en pie por completo: el mecanismo no es
+> dopaminérgico y no se puede afirmar especificidad. Dos de sus apoyos no.
+>
+> **Retractada.** Este ADR dice que el resultado «replica y extiende el hallazgo
+> de Liu 2020 en esta misma cohorte, que encontró que el dolor no figuraba entre
+> los síntomas no motores asociados al transportador». Es falso. Se recuperó el
+> trabajo y se comprobó que Liu 2020 nunca midió dolor: no hay ni una mención en
+> el artículo. La afirmación entró heredada de un documento de traspaso anterior
+> y sobrevivió a dos rondas de revisión. El resultado no replica nada, es una
+> prueba nueva, y así se reporta ahora en el manuscrito. La cita se retiró del
+> texto y este aviso existe para que no vuelva a entrar desde aquí.
+>
+> **Superado.** El intervalo de la diferencia entre pacientes y controles sanos
+> se dio como +0,016 (IC 95 % −0,109 a 0,142). Ese intervalo venía de una
+> transformación z de Fisher, que aplica el error estándar de una correlación
+> observada a una latente y lo subestima 2,4 veces. Sustituido por un modelo de
+> ecuaciones estructurales multigrupo con el parámetro derivado y contraste de
+> Wald: la diferencia es +0,016 (IC 95 % −0,199 a 0,231; p = 0,885), y la
+> igualdad de la correlación entre las tres cohortes no se rechaza
+> (χ² = 0,59; 2 gl; p = 0,744).
+>
+> El intervalo corregido es más ancho, de modo que la corrección refuerza la
+> conclusión de este ADR: con estos datos todavía menos se puede afirmar
+> especificidad. Las cifras vigentes están en `outputs/paper/cifras.json`.
 
 ## Contexto
 
@@ -23,8 +50,10 @@ La severidad motora sigue a la captación estriatal del transportador de dopamin
 la captación al modelo deja la asociación entre dolor y severidad motora
 inalterada, de 0,188 a 0,190.
 
-Replica y extiende el hallazgo de Liu 2020 en esta misma cohorte, que encontró que
-el dolor no figuraba entre los síntomas no motores asociados al transportador.
+~~Replica y extiende el hallazgo de Liu 2020 en esta misma cohorte, que encontró
+que el dolor no figuraba entre los síntomas no motores asociados al
+transportador.~~ RETRACTADO: Liu 2020 nunca midió dolor. Ver el aviso al
+principio de este registro.
 
 ### La covariación excluye el temblor
 

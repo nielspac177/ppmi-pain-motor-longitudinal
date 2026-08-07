@@ -15,7 +15,7 @@
 # =============================================================================
 
 source(file.path(Sys.getenv("TESIS_ROOT", unset = getwd()), "R", "paper", "00_comun.R"))
-suppressPackageStartupMessages({ library(patchwork); library(grid) })
+suppressPackageStartupMessages({ library(patchwork); library(grid); library(jsonlite) })
 
 NEGRO <- "#000000"; GRIS_OSC <- "#404040"; GRIS <- "#7A7A7A"; GRIS_CLA <- "#D0D0D0"
 MARINO <- "#003366"; MARINO_CLA <- "#E8EDF3"
@@ -67,6 +67,18 @@ guardar <- function(p, anotacion, nombre, ancho, alto) {
 }
 
 T <- function(f) read_csv(file.path(PAPER_TAB, f), show_col_types = FALSE)
+
+# Las figuras estan sujetas a la misma regla que el texto: ninguna cifra se
+# teclea. Se leen de cifras.json, que R genera desde los modelos ajustados. La
+# figura 1 llego a repetir durante varias rondas una correlacion superada, un
+# efecto de nivel anterior al centrado del tiempo y el nombre de un estimador
+# retirado, precisamente porque estaban escritos a mano dentro del guion.
+CIF <- jsonlite::fromJSON(file.path(ROOT, "outputs", "paper", "cifras.json"))
+cif <- function(k) {
+  if (is.null(CIF[[k]])) stop(sprintf("cifra ausente en cifras.json: %s", k))
+  CIF[[k]]
+}
+
 cat("\nGenerating figures...\n")
 
 # =============================================================================
@@ -84,11 +96,16 @@ cajas <- tribble(
   # fila 2: el aparato
   1.0, 3.4, 2.6, 1.2, "RI-CLPM\nseparates between-person\nfrom within-person", "metodo",
   4.4, 3.4, 2.6, 1.2, "Mixed model + IPCW\nlevel vs slope,\nattrition weighted", "metodo",
-  7.8, 3.4, 2.6, 1.2, "MSM (IPTW) + g-formula\ntime-varying confounding\nby prior exposure", "metodo",
-  # fila 3: lo que responde
-  1.0, 1.6, 2.6, 1.1, "Stable trait covariation\nr = 0.175\nNo temporal precedence", "resultado",
-  4.4, 1.6, 2.6, 1.1, "Level effect, not slope\n+1.00 points/pain point\nSlope p = 0.19", "resultado",
-  7.8, 1.6, 2.6, 1.1, "Attenuates by ~37%\nbut persists\n1.71 (0.72 to 2.67)", "resultado"
+  7.8, 3.4, 2.6, 1.2, "MSM with stabilised IPTW\ntime-varying confounding\nby prior exposure", "metodo",
+  # fila 3: lo que responde. Las cifras vienen de cifras.json, no del teclado.
+  1.0, 1.6, 2.6, 1.1, paste0("Stable trait covariation\nr = ", cif("rasgo_libre_r"),
+                             "\nNo temporal precedence"), "resultado",
+  4.4, 1.6, 2.6, 1.1, paste0("Level effect, not slope\n+", cif("mixto_nivel_est"),
+                             " points/pain point\nSlope p = ", cif("mixto_pendiente_p")),
+                      "resultado",
+  7.8, 1.6, 2.6, 1.1, paste0("Attenuates by ", cif("msm_reduccion"),
+                             "\nbut persists\n", cif("msm_boot_est"),
+                             " (", cif("msm_boot_ic"), ")"), "resultado"
 )
 
 flechas <- tribble(
@@ -257,26 +274,36 @@ guardar(f3,
 # =============================================================================
 # FIGURE 4 — Time-varying confounding by dopaminergic dose
 # =============================================================================
-msm <- T("t05_sintesis_msm.csv") |>
-  mutate(especificacion = factor(especificacion,
-    levels = rev(c("regresion estandar SIN ajustar por LEDD",
-                   "regresion estandar AJUSTANDO por LEDD",
-                   "modelo estructural marginal (IPTW estabilizado)",
-                   "MSM con IC por remuestreo de pacientes",
-                   "estimacion g por sustitucion")),
-    labels = rev(c("Standard regression, LEDD not adjusted",
-                   "Standard regression, LEDD adjusted",
-                   "MSM, stabilised IPTW (sandwich CI)",
-                   "MSM, stabilised IPTW (patient bootstrap CI)",
-                   "g-formula (substitution estimator)"))),
-    familia = if_else(grepl("^Standard", especificacion), "conv", "causal"))
+NIVELES_MSM <- c(
+  "regresion estandar SIN ajustar por LEDD"              = "Standard regression, LEDD not adjusted",
+  "regresion estandar AJUSTANDO por LEDD"                = "Standard regression, LEDD adjusted",
+  "modelo estructural marginal (IPTW estabilizado)"      = "MSM, stabilised IPTW (sandwich CI)",
+  "MSM con IC por remuestreo de pacientes"               = "MSM, stabilised IPTW (patient bootstrap CI)",
+  "sustitucion con covariables fijadas (NO es formula g)" = "Substitution estimate (not the g-formula)")
+
+msm <- T("t05_sintesis_msm.csv")
+faltan <- setdiff(msm$especificacion, names(NIVELES_MSM))
+if (length(faltan))
+  stop(sprintf("fila del MSM sin rotulo en la figura 4: %s",
+               paste(faltan, collapse = "; ")))
+
+msm <- msm |>
+  mutate(especificacion = factor(especificacion, levels = rev(names(NIVELES_MSM)),
+                                 labels = rev(unname(NIVELES_MSM))),
+         # La sustitucion NO es un estimador causal independiente: mantiene las
+         # covariables en sus valores observados. Va en su propia clase para que
+         # el pie no la cuente entre los dos que si lo son.
+         familia = case_when(grepl("^Standard", especificacion) ~ "conv",
+                             grepl("^Substitution", especificacion) ~ "sustitucion",
+                             TRUE ~ "causal"))
 
 f4 <- ggplot(msm, aes(x = estimacion, y = especificacion)) +
   geom_vline(xintercept = 0, colour = GRIS, linewidth = 0.4, linetype = "22") +
   geom_errorbarh(aes(xmin = ic_bajo, xmax = ic_alto), height = 0.13,
                  linewidth = 0.45, colour = NEGRO) +
   geom_point(aes(fill = familia), shape = 21, size = 2.8, colour = NEGRO, stroke = 0.5) +
-  scale_fill_manual(values = c(conv = "white", causal = MARINO)) +
+  scale_fill_manual(values = c(conv = "white", causal = MARINO,
+                               sustitucion = GRIS_CLA)) +
   # Las etiquetas van en una COLUMNA fija a la derecha, no pegadas al punto: con
   # hjust relativo se montan encima de los bigotes y quedan ilegibles. Es un
   # defecto que solo aparece al abrir la imagen.
@@ -293,10 +320,15 @@ guardar(f4,
              caption = env(paste(
                "Dopaminergic dose is affected by prior pain and in turn affects both later",
                "pain and motor severity, so conventional regression is biased whether or not",
-               "it is adjusted for. Filled circles are the two causal estimators, which agree",
-               "closely with each other and are about 37% smaller than the conventional",
-               "estimates. All five models are fitted on the same 1,970 observations from",
-               "787 patients. LEDD, levodopa equivalent daily dose."))),
+               "it is adjusted for. Navy circles are the two causal estimates, which are",
+               "about 37% smaller than the conventional ones. The grey circle holds the",
+               "time-varying covariates at their observed values, which is",
+               "not the g-formula, and is shown as a descriptive cross-check",
+               "rather than as",
+               "independent corroboration. All five models are fitted on the same",
+               paste0(cif("msm_n_obs"), " observations from ", cif("msm_n_pac"),
+                      " patients."),
+               "LEDD, levodopa equivalent daily dose."))),
         "figure4_msm", 9.0, 3.4)
 
 # =============================================================================
@@ -403,6 +435,109 @@ guardar(f6,
                "(p = 0.030) but not Holm (p = 0.051), and this should temper the claim.",
                "BH, Benjamini-Hochberg adjusted p value."))),
         "figure6_discriminant", 9.0, 3.6)
+
+# =============================================================================
+# FIGURE 8 — The two explanations that would dissolve the finding, tested
+# =============================================================================
+# Panel A: si la asociacion fuera estilo de reporte, ajustar por un indice de
+# tendencia a reportar deberia disolverla. Lo hace en la escala autoinformada y
+# no en la explorada, que es la disociacion que el confusor no puede producir.
+# Panel B: si el supuesto de pendiente fija estuviera distorsionando la
+# correlacion de rasgo, liberarla deberia moverla. La mueve 0,014. El tercer
+# punto es la misma curva latente con las cargas sin centrar: identico ajuste y
+# una correlacion mayor, que es lo que se habria publicado por descuido.
+
+est <- T("t15_dos_desenlaces.csv") |>
+  mutate(escala = ifelse(grepl("III", desenlace),
+                         "Part III\n(examined)", "Part II\n(self-reported)")) |>
+  select(escala, sin_estilo, con_estilo, atenuacion_pct, p_con) |>
+  pivot_longer(c(sin_estilo, con_estilo), names_to = "ajuste", values_to = "beta") |>
+  mutate(ajuste = factor(ifelse(ajuste == "sin_estilo", "Unadjusted",
+                                "Adjusted for reporting style"),
+                         levels = c("Unadjusted", "Adjusted for reporting style")),
+         escala = factor(escala, levels = c("Part II\n(self-reported)",
+                                            "Part III\n(examined)")))
+
+# La atenuacion de la Parte III es negativa: la asociacion no se reduce, aumenta.
+# Rotularla como "+29%" a secas se lee como una atenuacion del signo contrario,
+# asi que la etiqueta dice lo que pasa y no solo el numero.
+etq <- est |> group_by(escala) |>
+  summarise(x = max(beta) + 0.05,
+            lab = ifelse(first(atenuacion_pct) > 0,
+                         sprintf("%.0f%% removed", first(atenuacion_pct)),
+                         "nothing removed"), .groups = "drop")
+
+fa <- ggplot(est, aes(x = beta, y = escala)) +
+  geom_line(aes(group = escala), colour = GRIS, linewidth = 0.6) +
+  geom_point(aes(fill = ajuste), shape = 21, size = 3.1, colour = NEGRO, stroke = 0.5) +
+  geom_text(data = etq, aes(x = x, label = lab), hjust = 0, size = 2.5,
+            colour = GRIS_OSC, fontface = "bold") +
+  scale_fill_manual(values = c(Unadjusted = "white",
+                               `Adjusted for reporting style` = MARINO)) +
+  coord_cartesian(xlim = c(0, 0.82)) +
+  labs(x = "Association with pain (SD per SD)", y = NULL,
+       subtitle = "A. Adjusting for reporting style") +
+  tema() + theme(legend.position = "bottom", legend.title = element_blank(),
+                 legend.text = element_text(size = BASE - 2),
+                 legend.key.size = unit(0.32, "cm"),
+                 axis.text.y = element_text(size = BASE - 1))
+
+pen <- T("t16_pendiente_comparacion.csv") |>
+  mutate(etiqueta = c("Random intercept\n(fixed slope)",
+                      "Latent curve\n(centred loadings)",
+                      "Latent curve\n(loadings from zero)"),
+         clase = c("primario", "sensibilidad", "artefacto"),
+         ee = abs(r_rasgo) / abs(qnorm(pmax(p_rasgo, 1e-12) / 2)),
+         lo = r_rasgo - 1.96 * ee, hi = r_rasgo + 1.96 * ee,
+         etiqueta = factor(etiqueta, levels = rev(etiqueta)))
+
+fb <- ggplot(pen, aes(x = r_rasgo, y = etiqueta)) +
+  geom_vline(xintercept = 0, colour = GRIS, linewidth = 0.4, linetype = "22") +
+  geom_errorbarh(aes(xmin = lo, xmax = hi), height = 0.11,
+                 linewidth = 0.45, colour = NEGRO) +
+  geom_point(aes(fill = clase), shape = 21, size = 3.1, colour = NEGRO, stroke = 0.5) +
+  scale_fill_manual(values = c(primario = MARINO, sensibilidad = "white",
+                               artefacto = GRIS_CLA)) +
+  geom_text(aes(x = 0.52, label = sprintf("r = %.3f", r_rasgo)),
+            hjust = 0, size = 2.4, colour = GRIS_OSC) +
+  # El corchete marca las dos filas que son el MISMO modelo con otro origen del
+  # tiempo. Va a la derecha de los rotulos para que no colisionen.
+  annotate("segment", x = 0.70, xend = 0.70, y = 0.75, yend = 2.25,
+           colour = GRIS_OSC, linewidth = 0.35) +
+  annotate("segment", x = 0.685, xend = 0.70, y = 0.75, yend = 0.75,
+           colour = GRIS_OSC, linewidth = 0.35) +
+  annotate("segment", x = 0.685, xend = 0.70, y = 2.25, yend = 2.25,
+           colour = GRIS_OSC, linewidth = 0.35) +
+  annotate("text", x = 0.735, y = 1.5, angle = 270, hjust = 0.5, size = 2.2,
+           colour = GRIS_OSC, label = "same model, identical fit") +
+  coord_cartesian(xlim = c(0, 0.80)) +
+  labs(x = "Between-person trait correlation (95% CI)", y = NULL,
+       subtitle = "B. Letting patients differ in rate") +
+  tema() + theme(axis.text.y = element_text(size = BASE - 1),
+                 plot.margin = margin(6, 14, 24, 8))
+
+f8 <- fa + fb + plot_layout(widths = c(1, 1.12))
+
+guardar(f8,
+        plot_annotation(
+             title = "Figure 8. Two explanations that would dissolve the finding, tested",
+             caption = env(paste(
+               "A. Reporting style is a person-level index built as the residual of",
+               "self-reported on examined motor function. Adjusting for it removes",
+               "77% of the association with the self-reported scale and removes",
+               "nothing from the association with the examination, which instead",
+               "rises slightly. That dissociation is what a pure reporting",
+               "confounder cannot produce. B. The random-intercept model",
+               "assumes every patient progresses at the same rate; freeing that",
+               "assumption improves fit substantially (CFI 0.960 to 0.983) and moves",
+               "the trait correlation by 0.014. The third estimate is the same latent",
+               "curve model with slope loadings starting at zero: identical fit, but",
+               "the intercept has become the baseline level rather than the average",
+               "level, so the larger correlation is a property of where the origin of",
+               "time is placed. Intervals in panel B are derived from the reported",
+               "standard errors of the latent parameters.")),
+             theme = tema()),
+        "figure8_two_explanations", 9.2, 4.4)
 
 cat(sprintf("\nDone. %d files in %s\n",
             length(list.files(PAPER_FIG)), PAPER_FIG))

@@ -715,6 +715,94 @@ if (file.exists(manu)) {
             !grepl("trait correlation rose to 0.242", txt))
 }
 
+# ================================================== REGISTROS DE DECISION ====
+seccion("Los registros de decision no afirman cifras retiradas")
+
+adr_dir <- file.path(ROOT, "adr")
+adrs <- list.files(adr_dir, pattern = "\\.md$", full.names = TRUE)
+leer <- function(f) paste(readLines(f, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+texto_adr <- setNames(lapply(adrs, leer), basename(adrs))
+
+comprobar("hay al menos trece registros de decision", length(adrs) >= 13)
+
+# La afirmacion sobre Liu 2020 es falsa: ese trabajo nunca midio dolor. Puede
+# aparecer en un registro historico, pero solo tachada o dentro de un aviso de
+# retractacion. Esta prueba impide que vuelva a entrar como afirmacion viva.
+# El contraste se hace sobre el CONTEXTO y no sobre la linea: la afirmacion
+# citada dentro del aviso esta partida en varias lineas, y una prueba que mire
+# linea a linea la marcaria como viva. Es el mismo tipo de falso positivo que
+# esta prueba existe para evitar, en la prueba misma.
+marcas_retract <- "~~|RETRACTAD|retractad|Aviso|aviso|falso|nunca midi|no hay ni una menci"
+liu_vivo <- vapply(names(texto_adr), function(k) {
+  t <- gsub("\n", " ", texto_adr[[k]], fixed = TRUE)
+  pos <- gregexpr("Liu 2020", t, fixed = TRUE)[[1]]
+  if (pos[1] == -1) return(FALSE)
+  ventanas <- vapply(pos, function(i)
+    substr(t, max(1, i - 350), min(nchar(t), i + 350)), character(1))
+  any(!grepl(marcas_retract, ventanas))
+}, logical(1))
+comprobar("ninguna afirmacion viva sobre Liu 2020 en los registros",
+          !any(liu_vivo))
+
+comprobar("el ADR 0009 lleva aviso de cifras superadas",
+          grepl("Aviso de cifras superadas",
+                texto_adr[["0009-cambio-de-la-tesis-del-articulo.md"]]))
+comprobar("el ADR 0011 lleva aviso de retractacion",
+          grepl("afirmaci\u00f3n retractada",
+                texto_adr[["0011-el-mecanismo-no-es-dopaminergico-ni-especifico.md"]]))
+comprobar("el aviso del 0009 remite a la fuente de cifras vigente",
+          grepl("cifras.json",
+                texto_adr[["0009-cambio-de-la-tesis-del-articulo.md"]], fixed = TRUE))
+
+# El estado de un ADR superado en parte no puede seguir diciendo solo "Aceptada".
+for (k in c("0009-cambio-de-la-tesis-del-articulo.md",
+            "0011-el-mecanismo-no-es-dopaminergico-ni-especifico.md")) {
+  linea <- grep("^- \\*\\*Estado:\\*\\*",
+                strsplit(texto_adr[[k]], "\n")[[1]], value = TRUE)[1]
+  comprobar(sprintf("el estado de %s declara que algo quedo superado", substr(k, 1, 4)),
+            grepl("superad|retractad", linea))
+}
+
+# El manuscrito no debe reintroducir la afirmacion desde otro sitio.
+if (file.exists(manu)) {
+  comprobar("el manuscrito no atribuye a Liu 2020 un resultado sobre dolor",
+            !grepl("Liu[^.]{0,80}pain", txt))
+}
+
+# ============================================================ FIGURAS ========
+seccion("Las figuras no llevan cifras tecleadas")
+
+PAPER_FIG <- file.path(ROOT, "outputs", "paper", "figures")
+fig_src <- paste(readLines(file.path(ROOT, "R", "paper", "06_figuras.R"),
+                           warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+
+comprobar("la figura 8 existe en los cuatro formatos",
+          all(file.exists(file.path(PAPER_FIG, paste0("figure8_two_explanations",
+              c(".pdf", ".png", "_doc.pdf", "_doc.png"))))))
+
+# La figura 1 repitio durante varias rondas una correlacion superada, un efecto
+# de nivel anterior al centrado del tiempo y el nombre de un estimador retirado,
+# porque estaban escritos a mano dentro del guion. Ahora se leen de cifras.json.
+comprobar("el guion de figuras lee las cifras del JSON",
+          grepl("cifras.json", fig_src, fixed = TRUE))
+# El Metodo dice que esa cantidad no es la formula g. Ninguna figura puede
+# rotularla como si lo fuera.
+# Otra vez el contexto y no la cadena: el pie de la figura 4 parte la linea
+# justo en "g-formula", asi que una prueba literal la marcaria como afirmacion.
+# Lo que hay que exigir es que toda mencion vaya negada.
+menciones_g <- (function() {
+  t <- gsub("[\"\n,+]|\\s+", " ", fig_src)
+  t <- gsub(" +", " ", t)
+  pos <- gregexpr("g-formula", t, fixed = TRUE)[[1]]
+  if (pos[1] == -1) return(character(0))
+  vapply(pos, function(i) substr(t, max(1, i - 60), min(nchar(t), i + 20)),
+         character(1))
+})()
+comprobar("toda mencion a la formula g en las figuras va negada",
+          length(menciones_g) == 0 || all(grepl("not the g-formula", menciones_g)))
+comprobar("no quedan cifras del resultado tecleadas en la figura 1",
+          !grepl('r = 0\\.17|\\+1\\.00 points|1\\.71 \\(0\\.72', fig_src))
+
 # ------------------------------------------------------------------ CIERRE --
 cat("\n", strrep("=", 74), "\n", sep = "")
 cat(sprintf("%d pruebas, %d fallos\n", n_ok + n_fallo, n_fallo))
