@@ -796,6 +796,35 @@ comprobar("la figura 9 muestra las dos cantidades por dominio, que divergen",
           grepl("t09_dominios_entre.csv", fig_src, fixed = TRUE) &&
             grepl("t09_dominios_rasgo.csv", fig_src, fixed = TRUE))
 
+# "p = <0.001" no es notacion valida y sobrevivio hasta que se compilo el PDF.
+if (file.exists(manu)) {
+  # La normalizacion ocurre al COMPONER, no en la fuente: paper.md lleva
+  # "p = {{clave}}" y es correcto que lo lleve. Hay que mirar el compuesto.
+  comp_md <- file.path(ROOT, "manuscript", "paper-compuesto.md")
+  if (file.exists(comp_md)) {
+    ctxt <- paste(readLines(comp_md, warn = FALSE, encoding = "UTF-8"),
+                  collapse = "\n")
+    comprobar("el manuscrito compuesto no tiene 'p = <'",
+              !grepl("= *<", ctxt))
+    comprobar("las desigualdades quedan como 'p < 0.001'",
+              grepl("p < 0.001", ctxt, fixed = TRUE))
+    # Dos citas seguidas se imprimian como un superindice unico ilegible.
+    comprobar("no quedan superindices de cita pegados",
+              !grepl("\\^[0-9]+\\^\\^", ctxt))
+    comprobar("las citas consecutivas van separadas por coma",
+              grepl("\\^[0-9]+,[0-9]+\\^", ctxt))
+  }
+  # Cada figura presente tiene que tener leyenda en el manuscrito exportado.
+  ley <- file.path(ROOT, "outputs", "paper", "leyendas.md")
+  if (file.exists(ley)) {
+    lt <- paste(readLines(ley, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+    n_fig <- length(unique(sub("^(figure[0-9]+).*", "\\1",
+                               list.files(PAPER_FIG, pattern = "\\.pdf$"))))
+    n_ley <- length(gregexpr("\\*\\*Figure [0-9]+", lt)[[1]])
+    comprobar("hay una leyenda por cada figura presente", n_ley == n_fig)
+  }
+}
+
 comprobar("la figura 10 existe en los cuatro formatos",
           all(file.exists(file.path(PAPER_FIG, paste0("figure10_hypotheses",
               c(".pdf", ".png", "_doc.pdf", "_doc.png"))))))

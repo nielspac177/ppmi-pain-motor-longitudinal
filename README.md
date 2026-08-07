@@ -122,8 +122,8 @@ Then:
 ```bash
 export PPMI_RAW_DIR=/path/to/your/ppmi/files
 make prep-paper   # analytic tables, phenotype, control cohorts, biomarkers, analgesics
-make paper        # 16 analyses, figures, numbers, manuscript, tests
-Rscript tests/test_paper.R   # 224 regression tests
+make paper        # 17 analyses, figures, numbers, manuscript, Word/LaTeX export, tests
+Rscript tests/test_paper.R   # 229 regression tests
 ```
 
 Part II lives in a different directory in some PPMI exports; set
@@ -145,7 +145,7 @@ Four mechanical safeguards, each added after a specific failure:
    used in the text; `R/paper/08_componer.R` substitutes them and aborts on any
    placeholder without a value. An earlier audit on the companion project found
    five different sample sizes circulating in drafts because they were typed.
-2. **224 regression tests** recompute or re-read every published result and fail if
+2. **229 regression tests** recompute or re-read every published result and fail if
    it moves. When a method changes a number, the test fails, which is the point:
    the test and the decision record are updated together.
 3. **Every decision that changed a result is recorded** in a dated architecture

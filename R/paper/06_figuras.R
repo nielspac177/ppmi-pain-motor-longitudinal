@@ -53,8 +53,23 @@ tema <- function(base_size = BASE) {
 # un valor ya formateado como desigualdad.
 lab_p <- function(p) ifelse(p < 0.001, "p < 0.001", paste0("p = ", p_en(p)))
 
+# Las leyendas se acumulan al vuelo desde la MISMA anotacion que se dibuja, para
+# que el manuscrito y la imagen no puedan divergir. Ninguna revista acepta un
+# manuscrito sin seccion de leyendas, y tenerlas solo dentro del PNG las dejaba
+# fuera de todo lo que no sea la imagen.
+`%||%` <- function(a, b) if (is.null(a)) b else a
+LEYENDAS <- new.env(parent = emptyenv())
+LEYENDAS$filas <- list()
+
 guardar <- function(p, anotacion, nombre, ancho, alto) {
   completa <- p + anotacion
+  titulo_fig <- anotacion$title %||% anotacion$labels$title
+  pie_fig <- anotacion$caption %||% anotacion$labels$caption
+  if (is.null(titulo_fig))
+    stop(sprintf("figura sin titulo, no se puede exportar su leyenda: %s", nombre))
+  LEYENDAS$filas[[length(LEYENDAS$filas) + 1]] <- list(
+    nombre = nombre, titulo = titulo_fig,
+    pie = if (is.null(pie_fig)) "" else gsub("\n", " ", pie_fig))
   ggsave(file.path(PAPER_FIG, paste0(nombre, ".pdf")), completa,
          width = ancho, height = alto, device = cairo_pdf)
   ggsave(file.path(PAPER_FIG, paste0(nombre, ".png")), completa,
@@ -762,6 +777,37 @@ guardar(f10,
             "these data cannot separate the two.")),
           theme = tema()),
         "figure10_hypotheses", 7.6, 5.6)
+
+# ---------------------------------------------------------------------------
+# Leyendas, en el orden en que se dibujaron, para que las recoja el compositor.
+# ---------------------------------------------------------------------------
+# La figura 7 la produce LaTeX (figuras-tikz/dags_longitudinales.tex) y no pasa
+# por guardar(), asi que su leyenda no tiene ninguna otra fuente. Se declara
+# aqui, que es el unico sitio donde vive, y la prueba de regresion exige que
+# haya una leyenda por cada figura presente en el directorio.
+LEYENDAS$filas[[length(LEYENDAS$filas) + 1]] <- list(
+  nombre = "figure7_dags",
+  titulo = "Figure 7. Causal assumptions behind each estimator",
+  pie = paste(
+    "Directed acyclic graphs for the four structures the design has to resolve.",
+    "A double box marks a variable the analysis conditions on. A. Why a",
+    "conventional cross-lagged model reports both directions: the stable",
+    "between-person factor is an unmodelled common cause of every wave of both",
+    "series. B. What each component estimates once between-person and",
+    "within-person variation are separated. C. Dopaminergic dose as a",
+    "time-varying confounder affected by prior exposure, which is why",
+    "conditioning on it is biased in either direction and a marginal structural",
+    "model is used instead. D. The structure of censoring by attrition, and the",
+    "variables the censoring weights condition on."))
+
+orden <- vapply(LEYENDAS$filas, function(x) x$nombre, character(1))
+num <- as.integer(sub("^figure([0-9]+).*", "\\1", orden))
+lineas <- vapply(LEYENDAS$filas[order(num)], function(x)
+  paste0("**", x$titulo, "**", if (nzchar(x$pie)) paste0(" ", x$pie) else ""),
+  character(1))
+ruta_ley <- file.path(ROOT, "outputs", "paper", "leyendas.md")
+writeLines(c("## Figure legends", "", paste(lineas, collapse = "\n\n")), ruta_ley)
+cat(sprintf("  %-40s %d leyendas\n", "leyendas.md", length(lineas)))
 
 cat(sprintf("\nDone. %d files in %s\n",
             length(list.files(PAPER_FIG)), PAPER_FIG))

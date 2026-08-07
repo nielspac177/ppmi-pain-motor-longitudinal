@@ -89,6 +89,29 @@ cat(sprintf("\n  citas en el texto      : %d claves distintas\n", length(orden))
 cat(sprintf("  referencias disponibles: %d\n", length(refs)))
 cat(sprintf("  referencias sin usar   : %d\n", length(refs) - length(orden)))
 
+# Dos citas seguidas producen "^33^^34^", que al componer se imprime como un
+# superindice unico "3334" e impide saber cuantas fuentes se citan ni cuales.
+# Solo se ve en el PDF, no en el markdown. Se fusionan en "^33,34^", y se repite
+# hasta punto fijo porque puede haber tres o mas citas encadenadas.
+repetir <- 0
+while (any(grepl("\\^([0-9]+)\\^\\^([0-9]+)", completo))) {
+  completo <- gsub("\\^([0-9,]+)\\^\\^([0-9]+)\\^", "^\\1,\\2^", completo, perl = TRUE)
+  repetir <- repetir + 1
+  if (repetir > 20) stop("no converge la fusion de citas consecutivas")
+}
+if (repetir) cat(sprintf("  citas consecutivas fusionadas en %d pasadas\n", repetir))
+
+# Una cifra ya formateada como desigualdad ("<0.001") concatenada con el prefijo
+# "p = " produce "p = <0.001", que no es notacion valida. El texto no puede
+# arreglarlo caso por caso porque el mismo marcador imprime unas veces un numero
+# y otras una desigualdad, segun el modelo. Se normaliza aqui, despues de
+# sustituir, que es el unico punto donde se conoce el valor final.
+antes <- sum(lengths(regmatches(completo, gregexpr("= *<", completo))))
+completo <- gsub("([A-Za-z]) *= *<", "\\1 < ", completo, perl = TRUE)
+if (antes) cat(sprintf("  desigualdades normalizadas: %d\n", antes))
+if (any(grepl("= *<", completo)))
+  stop("queda alguna desigualdad mal formada del tipo 'p = <'")
+
 restantes <- unlist(regmatches(completo, gregexpr("\\{\\{[^}]*\\}\\}", completo)))
 if (length(restantes)) stop("Quedaron marcadores sin sustituir: ",
                             paste(unique(restantes), collapse = ", "))
