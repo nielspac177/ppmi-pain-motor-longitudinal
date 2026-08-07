@@ -669,6 +669,52 @@ if (file.exists(manu)) {
             !grepl("Two readings are available and we cannot separate them here", txt))
 }
 
+# ============================================================ PENDIENTE ALEATORIA
+seccion("El supuesto de pendiente fija del RI-CLPM (ADR 0013)")
+
+pc <- T("t16_pendiente_comparacion.csv")
+fila <- function(patron) which(grepl(patron, pc$modelo))[1]
+i_ri <- fila("^RI-CLPM"); i_ce <- fila("centradas"); i_ba <- fila("0 a 5")
+comprobar("se ajustan las tres especificaciones de la pendiente", nrow(pc) == 3)
+
+pl <- T("t16_pendiente_lrt.csv")
+comprobar("el supuesto de pendiente fija ESTA violado: el ajuste mejora",
+          pl$p[1] < 0.001 && pl$gl[1] == 7)
+comprobar("el modelo con pendiente ajusta mejor en los tres indices",
+          pc$cfi[i_ce] > pc$cfi[i_ri] && pc$rmsea[i_ce] < pc$rmsea[i_ri] &&
+            pc$srmr[i_ce] < pc$srmr[i_ri])
+
+# Lo que sostiene el articulo es que la violacion no distorsiona el resultado.
+comprobar("la correlacion de rasgo se desplaza menos de 0,05 al liberar la pendiente",
+          abs(pc$r_rasgo[i_ce] - pc$r_rasgo[i_ri]) < 0.05)
+comprobar("la correlacion de rasgo sigue siendo significativa con pendiente libre",
+          pc$p_rasgo[i_ce] < 0.05)
+comprobar("ninguna via intrapersonal sobrevive al liberar la pendiente",
+          pc$p_dolor_motor[i_ce] > 0.05 && pc$p_motor_dolor[i_ce] > 0.05)
+comprobar("la via dolor a motor del modelo restringido NO sobrevive",
+          pc$p_dolor_motor[i_ri] < 0.05 && pc$p_dolor_motor[i_ce] > 0.05)
+
+pv <- T("t16_varianza_pendientes.csv")
+comprobar("la varianza de pendiente es mayor en lo motor que en el dolor",
+          pv$varianza[pv$pendiente == "Sm"][1] > pv$varianza[pv$pendiente == "Sd"][1])
+
+# Esta es la prueba que impide que reaparezca el error de centrado del ADR 0010.
+comprobar("las dos parametrizaciones de la curva latente son el MISMO modelo",
+          abs(pc$aic[i_ce] - pc$aic[i_ba]) < 0.01)
+comprobar("y sin embargo dan correlaciones distintas: la cifra depende del origen",
+          abs(pc$r_rasgo[i_ba] - pc$r_rasgo[i_ce]) > 0.03)
+comprobar("el articulo reporta la centrada, no la mayor de las dos",
+          pc$r_rasgo[i_ba] > pc$r_rasgo[i_ce])
+
+if (file.exists(manu)) {
+  comprobar("el manuscrito declara que el supuesto de pendiente fija se contrasto",
+            grepl("latent curve model with structured residuals", txt))
+  comprobar("el manuscrito advierte del artefacto de parametrizacion",
+            grepl("property of where the origin of time is placed", txt))
+  comprobar("el manuscrito NO reporta la correlacion sin centrar como hallazgo",
+            !grepl("trait correlation rose to 0.242", txt))
+}
+
 # ------------------------------------------------------------------ CIERRE --
 cat("\n", strrep("=", 74), "\n", sep = "")
 cat(sprintf("%d pruebas, %d fallos\n", n_ok + n_fallo, n_fallo))

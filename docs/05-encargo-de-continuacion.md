@@ -5,8 +5,8 @@
 > que era solo para una ronda de revisión. Este cubre el ciclo completo: revisar,
 > analizar, buscar literatura, rehacer figuras, y decidir cuándo parar.
 >
-> Fecha de corte: 7 de agosto de 2026. Estado: cuatro rondas de revisión, 181
-> pruebas de regresión en verde, 47 referencias citadas de 165 verificadas.
+> Fecha de corte: 7 de agosto de 2026. Estado: seis rondas de revisión, 207
+> pruebas de regresión en verde, 48 referencias citadas de 166 verificadas.
 
 ---
 
@@ -15,7 +15,7 @@
 ```
 Vas a continuar un artículo científico sobre dolor y severidad motora en la
 enfermedad de Parkinson, con datos de PPMI. Ya ha pasado cuatro rondas de
-revisión por pares y 181 pruebas de regresión están en verde. Tu trabajo NO es
+revisión por pares y 207 pruebas de regresión están en verde. Tu trabajo NO es
 empezar de cero ni repetir lo hecho: es encontrar lo que queda y decidir con
 honestidad cuándo ya no queda nada que merezca la pena.
 
@@ -27,7 +27,7 @@ LEE PRIMERO, en este orden:
   docs/paper/05-encargo-de-continuacion.md    este documento
   manuscript/paper-compuesto.md               el manuscrito compuesto
   docs/paper/04-prompt-para-revision-independiente.md   la ronda anterior
-  adr/0006 a adr/0011                         las decisiones que cambiaron algo
+  adr/0006 a adr/0013                         las decisiones que cambiaron algo
   docs/dags-longitudinales.md                 los supuestos causales
 
 SKILLS QUE DEBES USAR, y cuándo
@@ -109,6 +109,8 @@ REGLAS NO NEGOCIABLES
 | Marca nivel, no pendiente | +1,396 frente a p = 0,189 | `t04_mixto.csv` |
 | No es dopaminérgica | dolor p = 0,766, motor p < 0,001 | `t11_h2_dat.csv` |
 | No es específica del dolor | cinco análisis convergentes | varias |
+| El estilo de reporte no explica lo explorado | atenúa 77 % la Parte II y 0 % la Parte III | `t15_dos_desenlaces.csv` |
+| La pendiente fija no distorsionaba nada | 0,175 a 0,189 al liberarla | `t16_pendiente_comparacion.csv` |
 
 ---
 
@@ -121,6 +123,7 @@ los tres se han repetido.
 | --- | --- |
 | **Cita que atribuye a una fuente algo que no contiene** | Liu 2020 citado por un resultado sobre dolor que nunca midió; VanderWeele 2019 por una distinción de escala que no menciona; Pautrat 2023 por una afirmación sobre estadios de Braak que contradice |
 | **El texto no sigue al código** | Dos valores p intercambiados que invertían el argumento; una correlación atribuida a la variable equivocada; un marcador de plantilla imprimiendo la cifra de otra variable; Métodos afirmando un conjunto de ajuste que los modelos no llevan |
+| **Una cifra que depende de la parametrización y no de los datos** | El efecto de nivel del modelo mixto era la sección transversal basal por no centrar el tiempo; la correlación de rasgo de la curva latente sube de 0,189 a 0,242 con las cargas sin centrar y el mismo ajuste. Las dos veces el error produjo la cifra conveniente |
 | **El código no hace lo que su propio comentario dice** | El comentario declara primario el modelo libre y el script extrae solo del restringido; una regla preespecificada evaluada y luego incumplida; etiquetas escalares en lavaan imponiendo igualdad entre grupos sin avisar |
 
 Y errores de método, ya corregidos: residuo por puntuaciones factoriales que se
@@ -133,29 +136,37 @@ redondeada a la baja en la dirección conveniente.
 
 ## 🔭 Lo que queda abierto, por orden de valor
 
-1. **El confusor de estilo de respuesta es el ataque más fuerte que sigue en
-   pie.** Zolfaghari 2022, en esta misma cohorte, muestra que la Parte IB, que
-   contiene el ítem de dolor, correlaciona 0,54 con la discapacidad motora
-   autoinformada, y que quienes más reportan están igual o menos afectados en la
-   exploración. Eso produciría nuestra correlación de rasgo sin ninguna biología.
-   Está declarado en Limitaciones. **¿Se puede contrastar con lo que hay?** Una
-   vía: construir un índice de tendencia a reportar con los ítems de la Parte I
-   ajenos al dolor y ver si absorbe la correlación.
-2. **El resumen sigue en 528 palabras**, contra 250 a 350 según revista.
-3. **No hay figuras para los análisis 9 a 14.** Serían dominios, cohortes,
-   hipótesis y clínicos. Hoy solo se reportan en tablas.
-4. **Los ADR 0009 y 0011 están desactualizados**: citan cifras anteriores al
+Los dos frentes que eran análisis están cerrados. Lo que queda son decisiones del
+autor y trabajo de presentación, salvo el punto 4, que sigue siendo una pregunta
+abierta sin respuesta obvia con estos datos.
+
+1. **El resumen sigue en 528 palabras**, contra 250 a 350 según revista. Recortar
+   exige antes elegir revista, y eso es decisión del autor.
+2. **No hay figuras para los análisis 9 a 16.** Serían dominios, cohortes,
+   hipótesis, clínicos, estilo de reporte y pendiente aleatoria. Hoy solo se
+   reportan en tablas. La comparación de las dos parametrizaciones de la curva
+   latente es la que más ganaría con una figura, porque el argumento es visual:
+   mismo ajuste, distinta correlación.
+3. **Los ADR 0009 y 0011 están desactualizados**: citan cifras anteriores al
    centrado del tiempo y a la corrección del multigrupo, y el 0011 aún repite la
    afirmación retirada sobre Liu 2020. Necesitan marca de superado.
-5. **El RI-CLPM no tiene pendiente aleatoria.** En una enfermedad que progresa
-   2,29 puntos al año, la variación entre personas en la VELOCIDAD se mete en el
-   componente intrapersonal. Un modelo de curva latente con residuos
-   estructurados es el remedio estándar y no está hecho.
-6. **La Parte II da r = 0,533 frente a 0,175 de la Parte III.** El artículo
-   ofrece dos lecturas y se inclina por la de método compartido apoyándose en
-   Hodgson 2026. ¿Hay forma de zanjarlo?
+4. **La Parte II da r = 0,533 frente a 0,175 de la Parte III.** El análisis 15
+   avanzó en esto: el índice de estilo de reporte absorbe el 77 % de la
+   asociación con la Parte II y nada de la explorada, lo que apoya la lectura de
+   varianza de método compartido. No la zanja del todo, porque el índice se
+   construye de la misma escala. Si a alguien se le ocurre un contraste que la
+   zanje, ese es el hallazgo que queda.
 
----
+### Cerrados desde la versión anterior de este documento
+
+- **Confusor de estilo de respuesta** (era el punto 1). Contrastado en el
+  análisis 15 y ADR 0012. Es real y grande, pero explica la asociación
+  autoinformada y no la explorada.
+- **Pendiente aleatoria en el RI-CLPM** (era el punto 5). Contrastada en el
+  análisis 16 y ADR 0013. El supuesto estaba violado, el ajuste mejora mucho, y
+  la correlación de rasgo se mueve 0,014. De paso produjo un ejemplar nuevo del
+  patrón de error de centrado: con cargas sin centrar la misma cifra sube a
+  0,242 con idéntico ajuste. Léelo antes de proponer nada parecido.
 
 ## 🚫 Lo que NO es factible, para que no se pierda tiempo
 
@@ -172,8 +183,8 @@ redondeada a la baja en la dirección conveniente.
 ```bash
 export PPMI_RAW_DIR=/ruta/a/los/csv/de/ppmi
 make prep-paper   # fenotipo, cohortes, biomarcadores, analgésicos
-make paper        # 14 análisis, figuras, cifras, manuscrito, pruebas
-Rscript tests/test_paper.R        # 181 pruebas del artículo
+make paper        # 16 análisis, figuras, cifras, manuscrito, pruebas
+Rscript tests/test_paper.R        # 207 pruebas del artículo
 Rscript tests/test_resultados.R   # 57 de la tesis, que NO debe moverse
 ```
 

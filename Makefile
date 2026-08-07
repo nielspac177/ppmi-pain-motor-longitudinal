@@ -103,6 +103,7 @@ paper-analisis: check-data check-fenotipo
 	$(R) R/paper/12_flujo.R
 	$(R) R/paper/14_clinicos.R
 	$(R) R/paper/15_estilo_de_reporte.R
+	$(R) R/paper/16_pendiente_aleatoria.R
 	$(R) R/paper/13_inventario.R
 
 paper-figuras: check-data paper-dags

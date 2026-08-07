@@ -54,12 +54,14 @@ that hard, and the code addresses each with a separate estimator.
 | Does motor phenotype modify it? | Stebbins TD/PIGD classification, pre-specified interaction plus strata | `03_fenotipo.R` |
 | Level or slope, and what about dropout? | Mixed model plus weighted GEE with inverse probability of censoring weights | `04_longitudinal.R` |
 | What about dopaminergic dose? | Marginal structural model with stabilised IPTW | `05_msm_ledd.R` |
+| Do patients differ in rate, and does it matter? | Latent curve model with structured residuals | `16_pendiente_aleatoria.R` |
 | Which motor domain carries it? | Decomposition into five domains that sum to the total | `09_dominios.R` |
 | Is it specific to the disease? | Same model refitted in healthy control and prodromal cohorts | `10_controles_negativos.R` |
 | Eight mechanistic hypotheses | DAT-SPECT, general factor, ICC, CSF alpha-synuclein, GBA, limb gradient | `11_hipotesis.R` |
 | Is the participant flow consistent? | All five populations derived from one place | `12_flujo.R` |
 | How many tests were run? | Full inventory, classified primary / sensitivity / exploratory | `13_inventario.R` |
 | Analgesics, sex, motor complications, other non-motor items | Four clinical analyses requested at peer review | `14_clinicos.R` |
+| Is the association just a reporting style? | Person-level residual of self-reported on examined motor scale | `15_estilo_de_reporte.R` |
 
 The random-intercept model is the load-bearing piece. A conventional cross-lagged
 panel model on these data reports significant paths in **both** directions, which
@@ -120,8 +122,8 @@ Then:
 ```bash
 export PPMI_RAW_DIR=/path/to/your/ppmi/files
 make prep-paper   # analytic tables, phenotype, control cohorts, biomarkers, analgesics
-make paper        # 14 analyses, figures, numbers, manuscript, tests
-Rscript tests/test_paper.R   # 153 regression tests
+make paper        # 16 analyses, figures, numbers, manuscript, tests
+Rscript tests/test_paper.R   # 207 regression tests
 ```
 
 Part II lives in a different directory in some PPMI exports; set
@@ -143,7 +145,7 @@ Four mechanical safeguards, each added after a specific failure:
    used in the text; `R/paper/08_componer.R` substitutes them and aborts on any
    placeholder without a value. An earlier audit on the companion project found
    five different sample sizes circulating in drafts because they were typed.
-2. **153 regression tests** recompute or re-read every published result and fail if
+2. **207 regression tests** recompute or re-read every published result and fail if
    it moves. When a method changes a number, the test fails, which is the point:
    the test and the decision record are updated together.
 3. **Every decision that changed a result is recorded** in a dated architecture
@@ -172,6 +174,8 @@ Spanish, the project's working language.
 | [0009](adr/0009-cambio-de-la-tesis-del-articulo.md) | Reframing the paper after the results |
 | [0010](adr/0010-atricion-y-confusion-variable-en-el-tiempo.md) | Attrition weighting and time-varying confounding |
 | [0011](adr/0011-el-mecanismo-no-es-dopaminergico-ni-especifico.md) | The covariation is not explained by dopaminergic loss, and specificity cannot be claimed |
+| [0012](adr/0012-el-estilo-de-reporte-contrastado.md) | Testing the reporting-style confound instead of conceding it |
+| [0013](adr/0013-la-pendiente-fija-del-riclpm.md) | The fixed-slope assumption of the random-intercept model, and a parameterisation artefact it produced |
 
 The decision records are in Spanish, the working language of the project. The
 manuscript, the figures and this README are in English.
