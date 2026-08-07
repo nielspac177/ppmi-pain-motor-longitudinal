@@ -5,7 +5,7 @@
 > que era solo para una ronda de revisión. Este cubre el ciclo completo: revisar,
 > analizar, buscar literatura, rehacer figuras, y decidir cuándo parar.
 >
-> Fecha de corte: 7 de agosto de 2026. Estado: seis rondas de revisión, 207
+> Fecha de corte: 7 de agosto de 2026. Estado: nueve rondas de revisión, 224
 > pruebas de regresión en verde, 48 referencias citadas de 166 verificadas.
 
 ---
@@ -15,7 +15,7 @@
 ```
 Vas a continuar un artículo científico sobre dolor y severidad motora en la
 enfermedad de Parkinson, con datos de PPMI. Ya ha pasado cuatro rondas de
-revisión por pares y 207 pruebas de regresión están en verde. Tu trabajo NO es
+revisión por pares y 224 pruebas de regresión están en verde. Tu trabajo NO es
 empezar de cero ni repetir lo hecho: es encontrar lo que queda y decidir con
 honestidad cuándo ya no queda nada que merezca la pena.
 
@@ -134,39 +134,35 @@ redondeada a la baja en la dirección conveniente.
 
 ---
 
-## 🔭 Lo que queda abierto, por orden de valor
+## 🔭 Lo que queda abierto, y por qué el bucle se detuvo aquí
 
-Los dos frentes que eran análisis están cerrados. Lo que queda son decisiones del
-autor y trabajo de presentación, salvo el punto 4, que sigue siendo una pregunta
-abierta sin respuesta obvia con estos datos.
+El bucle interno se detuvo tras dos rondas consecutivas sin ningún hallazgo que
+cambiara una cifra, que era el criterio fijado de antemano. Lo que queda no es
+que no haya nada más: es que lo que queda no lo puede decidir un analista.
 
-1. **El resumen sigue en 528 palabras**, contra 250 a 350 según revista. Recortar
-   exige antes elegir revista, y eso es decisión del autor.
-2. **No hay figuras para los análisis 9 a 16.** Serían dominios, cohortes,
-   hipótesis, clínicos, estilo de reporte y pendiente aleatoria. Hoy solo se
-   reportan en tablas. La comparación de las dos parametrizaciones de la curva
-   latente es la que más ganaría con una figura, porque el argumento es visual:
-   mismo ajuste, distinta correlación.
-3. **Los ADR 0009 y 0011 están desactualizados**: citan cifras anteriores al
-   centrado del tiempo y a la corrección del multigrupo, y el 0011 aún repite la
-   afirmación retirada sobre Liu 2020. Necesitan marca de superado.
-4. **La Parte II da r = 0,533 frente a 0,175 de la Parte III.** El análisis 15
-   avanzó en esto: el índice de estilo de reporte absorbe el 77 % de la
-   asociación con la Parte II y nada de la explorada, lo que apoya la lectura de
-   varianza de método compartido. No la zanja del todo, porque el índice se
-   construye de la misma escala. Si a alguien se le ocurre un contraste que la
-   zanje, ese es el hallazgo que queda.
+| Pendiente | Por qué no lo cierra un analista |
+| --- | --- |
+| El resumen está en 558 palabras, contra 250 a 350 | Recortar exige elegir revista primero, y eso es decisión del autor |
+| No hay figura para el análisis 14, los cuatro análisis clínicos | Se pueden dibujar, pero son secundarios, ya están reportados con sus cifras en el texto, y una figura más no mueve ninguna |
+| La Parte II da r = 0,533 frente a 0,175 de la Parte III | El análisis 15 avanzó cuanto se puede con estos datos: el índice de estilo absorbe el 77 % de lo autoinformado y nada de lo explorado. Zanjarlo del todo exige una medida de dolor que no venga de la misma escala, y PPMI no la tiene |
+| Orden de autoría, revista objetivo, alcance | Decisión del autor por definición |
 
-### Cerrados desde la versión anterior de este documento
+Lo que se cerró en las últimas rondas, para que no se repita el trabajo:
 
-- **Confusor de estilo de respuesta** (era el punto 1). Contrastado en el
-  análisis 15 y ADR 0012. Es real y grande, pero explica la asociación
-  autoinformada y no la explorada.
-- **Pendiente aleatoria en el RI-CLPM** (era el punto 5). Contrastada en el
-  análisis 16 y ADR 0013. El supuesto estaba violado, el ajuste mejora mucho, y
-  la correlación de rasgo se mueve 0,014. De paso produjo un ejemplar nuevo del
-  patrón de error de centrado: con cargas sin centrar la misma cifra sube a
-  0,242 con idéntico ajuste. Léelo antes de proponer nada parecido.
+- **Confusor de estilo de respuesta.** Análisis 15, ADR 0012. Real y grande,
+  pero explica lo autoinformado y no lo explorado.
+- **Pendiente aleatoria del RI-CLPM.** Análisis 16, ADR 0013. El supuesto
+  estaba violado, el ajuste mejora mucho, la correlación se mueve 0,014. De
+  paso produjo un ejemplar nuevo del patrón de error de centrado.
+- **ADR 0009 y 0011 desactualizados.** Llevan aviso de superado. El 0011
+  contenía una afirmación retractada sobre Liu 2020 que había sobrevivido a
+  varias rondas dentro del registro, aunque ya estaba fuera del manuscrito.
+- **Figuras 8, 9 y 10.** Cubren las dos explicaciones que disolverían el
+  hallazgo, la evidencia de no especificidad, y las ocho hipótesis con la cota
+  de fiabilidad bajo la que se probaron.
+- **Cifras tecleadas dentro de las figuras.** La figura 1 publicaba tres cifras
+  superadas y un estimador retirado porque estaban escritas a mano en el guion.
+  Las figuras leen ahora de `cifras.json`, igual que el texto.
 
 ## 🚫 Lo que NO es factible, para que no se pierda tiempo
 
@@ -184,7 +180,7 @@ abierta sin respuesta obvia con estos datos.
 export PPMI_RAW_DIR=/ruta/a/los/csv/de/ppmi
 make prep-paper   # fenotipo, cohortes, biomarcadores, analgésicos
 make paper        # 16 análisis, figuras, cifras, manuscrito, pruebas
-Rscript tests/test_paper.R        # 207 pruebas del artículo
+Rscript tests/test_paper.R        # 224 pruebas del artículo
 Rscript tests/test_resultados.R   # 57 de la tesis, que NO debe moverse
 ```
 

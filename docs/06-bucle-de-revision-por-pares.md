@@ -7,7 +7,7 @@
 > hace con una exigencia que el otro no tiene: la validación bibliográfica y la
 > búsqueda profunda se repiten en cada ronda, no cada dos.
 >
-> Fecha de corte: 7 de agosto de 2026. Seis rondas internas completadas, 207
+> Fecha de corte: 7 de agosto de 2026. Nueve rondas internas completadas, 224
 > pruebas de regresión en verde, 13 registros de decisión.
 
 ---
@@ -32,16 +32,16 @@ anteriores. El formato es la variable que importa.
 
 | Cantidad | Valor |
 | --- | --- |
-| Palabras del manuscrito, sin referencias | 9.046 |
+| Palabras del manuscrito, sin referencias | 9.105 |
 | Palabras del resumen | 558, contra un límite de 250 a 350 |
 | Cifras exportadas desde los modelos | 463 |
 | Tablas de resultados | 83 |
-| Figuras | 26 |
+| Figuras | 38 archivos, 10 figuras |
 | Referencias verificadas en el archivo | 166 |
 | Referencias efectivamente citadas | 48 |
 | Guiones de análisis | 17 |
-| Registros de decisión | 13 |
-| Pruebas de regresión del artículo | 207, cero fallos |
+| Registros de decisión | 13, dos de ellos con aviso de superado |
+| Pruebas de regresión del artículo | 224, cero fallos |
 | Pruebas de la tesis, que no debe moverse | 57, cero fallos |
 
 Las afirmaciones que sostienen el artículo, cada una con la tabla que la
@@ -57,6 +57,7 @@ produce, para que las verifiques y no las creas:
 | No es específica del dolor | cinco análisis convergentes | varias |
 | El estilo de reporte no explica lo explorado | atenúa 77 % la Parte II, 0 % la Parte III | `t15_dos_desenlaces.csv` |
 | Liberar la pendiente no cambia la conclusión | 0,175 a 0,189 | `t16_pendiente_comparacion.csv` |
+| El dolor es la menos estable de las cuatro medidas | ICC 0,392 frente a 0,535 motor | `t11_h4_icc.csv` |
 
 ---
 
@@ -180,7 +181,16 @@ porque los cuatro han reaparecido.
 | El código no hace lo que su propio comentario dice | El comentario declara primario el modelo libre y el guion extrae solo del restringido; una regla preespecificada evaluada y luego incumplida; etiquetas escalares en lavaan imponiendo igualdad entre grupos sin avisar |
 | Una cifra que depende de la parametrización y no de los datos | El efecto de nivel del modelo mixto era la sección transversal basal por no centrar el tiempo; la correlación de rasgo de la curva latente sube de 0,189 a 0,242 con las cargas sin centrar y el mismo ajuste. Las dos veces el error produjo la cifra conveniente |
 
-El cuarto patrón es el más reciente y el más instructivo. Las dos veces se
+Un quinto patrón apareció al final y conviene buscarlo también: **una cifra
+correcta en el texto y superada en la figura**. La figura 1 publicó durante
+varias rondas una correlación, un efecto de nivel y el nombre de un estimador
+que el manuscrito ya había corregido, porque estaban escritos a mano dentro del
+guion de figuras. La regla de que ninguna cifra se teclea se estaba aplicando
+al texto y no a las figuras. Y la figura 4 tenía una fila rotulada `NA` desde
+que se renombró una fila de su tabla. Ninguno de los dos se ve leyendo el
+código: solo abriendo la imagen.
+
+El cuarto patrón es el más instructivo. Las dos veces se
 detectó por desconfiar de un resultado que gustaba, no revisando código. Si en
 alguna ronda encuentras una cifra que refuerza el artículo, ese es el momento
 de aplicar más escrutinio, no menos.
@@ -227,7 +237,7 @@ tiempo y erosiona la confianza en todo lo demás.
 export PPMI_RAW_DIR=/ruta/a/los/csv/de/ppmi
 make prep-paper   # fenotipo, cohortes, biomarcadores, analgésicos
 make paper        # 16 análisis, figuras, cifras, manuscrito, pruebas
-Rscript tests/test_paper.R        # 207 pruebas del artículo
+Rscript tests/test_paper.R        # 224 pruebas del artículo
 Rscript tests/test_resultados.R   # 57 de la tesis, que NO debe moverse
 ```
 
