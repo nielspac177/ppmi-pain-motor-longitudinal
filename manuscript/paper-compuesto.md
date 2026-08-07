@@ -202,7 +202,7 @@ We note that an earlier version of this analysis obtained a significant negative
 
 ### Pain is the least trait-like of the measures examined
 
-The intraclass correlation was 0.392 for pain, against 0.535 for the motor score, 0.595 for MoCA and 0.626 for depression. Only about 0.392 of the variance in pain lies between patients.
+The intraclass correlation was 0.392 for pain, against 0.535 for the motor score, 0.595 for MoCA and 0.626 for depression. Figure 10 places this alongside the eight mechanistic hypotheses, because it is the bound under which all of them were tested. Only about 0.392 of the variance in pain lies between patients.
 
 This bears directly on the null within-person paths. A measure with little stable between-person variance and correspondingly more within-person variation and measurement error offers less signal for a cross-lagged path to detect, and averaging over six waves improves the reliability of the between-person component but not of the within-person deviations. The null within-person paths are therefore consistent with a genuine absence of within-person coupling and with insufficient reliability to detect it, and we cannot distinguish these.
 

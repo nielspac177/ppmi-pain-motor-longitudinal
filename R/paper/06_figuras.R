@@ -674,5 +674,94 @@ guardar(f9,
           theme = tema()),
         "figure9_specificity", 7.4, 7.2)
 
+# =============================================================================
+# FIGURE 10 — The eight mechanistic hypotheses, and the reliability that bounds them
+# =============================================================================
+# Las ocho hipotesis viven hoy en una tabla de sintesis que nadie va a leer
+# entera, con ocho estadisticos en escalas distintas. Cuatro de ellas SI son
+# comparables: todas preguntan si una diferencia estandarizada se separa de
+# cero. Esas van juntas en el panel A. El panel B lleva la fiabilidad, que no
+# es una hipotesis sino la cota que limita la lectura de todas las demas: si el
+# dolor es la menos estable de las cuatro medidas, un acoplamiento
+# intrapersonal nulo es compatible con ausencia real y con falta de señal.
+
+contrastes <- bind_rows(
+  T("t09_dominios_diferencial.csv") |>
+    transmute(etiqueta = "Rigidity-bradykinesia axis\nminus tremor",
+              hip = "H1", est = diferencia, lo = ic_bajo, hi = ic_alto, p),
+  T("t11_h8_miembros.csv") |>
+    filter(grepl("^diferencia", region)) |>
+    transmute(etiqueta = "Lower limb\nminus upper limb",
+              hip = "H8", est = beta_de, lo = ic_bajo, hi = ic_alto, p),
+  T("t11_h6_h7_interaccion.csv") |>
+    transmute(etiqueta = if_else(grepl("SAA", modificador),
+                                 "Pain by CSF seed amplification\n(positive vs negative)",
+                                 "Pain by GBA genotype\n(carrier vs non-carrier)"),
+              hip = if_else(grepl("SAA", modificador), "H6", "H7"),
+              est = estimacion, lo = ic_bajo, hi = ic_alto, p)) |>
+  mutate(etiqueta = factor(etiqueta, levels = rev(etiqueta)),
+         signif = if_else(p < 0.05, "si", "no"))
+
+fa10 <- ggplot(contrastes, aes(x = est, y = etiqueta)) +
+  geom_vline(xintercept = 0, colour = GRIS, linewidth = 0.4, linetype = "22") +
+  geom_errorbarh(aes(xmin = lo, xmax = hi), height = 0.12,
+                 linewidth = 0.45, colour = NEGRO) +
+  geom_point(aes(fill = signif), shape = 21, size = 2.8, colour = NEGRO, stroke = 0.5) +
+  scale_fill_manual(values = c(si = MARINO, no = "white")) +
+  geom_text(aes(x = 0.62, label = paste0(hip, ", ", lab_p(p))),
+            hjust = 0, size = 2.3, colour = GRIS_OSC) +
+  coord_cartesian(xlim = c(-0.60, 1.05)) +
+  labs(x = "Standardised difference (95% CI)", y = NULL,
+       subtitle = "A. Four hypotheses that predict a difference, on one scale") +
+  tema() + theme(axis.text.y = element_text(size = BASE - 1.5))
+
+icc <- T("t11_h4_icc.csv") |>
+  mutate(etiqueta = recode(serie,
+           `Dolor (MDS-UPDRS 1.9)` = "Pain (MDS-UPDRS 1.9)",
+           `MDS-UPDRS III total` = "MDS-UPDRS III total",
+           `GDS-15` = "GDS-15", MoCA = "MoCA"),
+         clase = if_else(grepl("^Pain", etiqueta), "foco", "otra")) |>
+  arrange(icc) |>
+  mutate(etiqueta = factor(etiqueta, levels = etiqueta))
+
+fb10 <- ggplot(icc, aes(x = icc, y = etiqueta)) +
+  geom_segment(aes(x = 0, xend = icc, yend = etiqueta),
+               colour = GRIS, linewidth = 0.5) +
+  geom_point(aes(fill = clase), shape = 21, size = 3, colour = NEGRO, stroke = 0.5) +
+  scale_fill_manual(values = c(foco = MARINO, otra = "white")) +
+  geom_text(aes(x = icc + 0.025, label = n_en(icc, 3)),
+            hjust = 0, size = 2.4, colour = GRIS_OSC) +
+  coord_cartesian(xlim = c(0, 0.78)) +
+  labs(x = "Intraclass correlation across the six waves", y = NULL,
+       subtitle = "B. How trait-like each measure is (H4)") +
+  tema() + theme(axis.text.y = element_text(size = BASE - 1.5))
+
+f10 <- fa10 / fb10 + plot_layout(heights = c(1.35, 1))
+
+guardar(f10,
+        plot_annotation(
+          title = "Figure 10. What happened to the eight mechanistic hypotheses",
+          caption = env(paste(
+            "A. Four of the eight hypotheses predict that a standardised",
+            "difference departs from zero, so they can be read on one axis.",
+            "Only the domain contrast does (H1), and the paper does not treat",
+            "it as mechanistic: the identical test with depression as the",
+            "exposure gives", paste0(cif("dif_gds_est"), " (95% CI ", cif("dif_gds_ic"), "),"), "so the",
+            "tremor dissociation is a property of how non-motor burden relates",
+            "to the motor scale rather than a signature of pain. Neither CSF",
+            "seed amplification status (H6) nor GBA genotype (H7) modifies the",
+            "association, and the limb gradient a peripheral route would",
+            "predict is not there (H8). Panel B carries a fifth (H4); the",
+            "remaining three are reported",
+            "elsewhere: dopaminergic dependence (H2) in the text, the general",
+            "factor (H3) as a nested likelihood ratio test, and the prodromal",
+            "cohort (H5) in Figure 9B. B. Pain is the least trait-like of the",
+            "four measures followed here. This bounds the whole analysis: a",
+            "null within-person path is compatible with genuine absence of",
+            "coupling and with too little reliable signal to detect it, and",
+            "these data cannot separate the two.")),
+          theme = tema()),
+        "figure10_hypotheses", 7.6, 5.6)
+
 cat(sprintf("\nDone. %d files in %s\n",
             length(list.files(PAPER_FIG)), PAPER_FIG))

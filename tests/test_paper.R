@@ -796,6 +796,15 @@ comprobar("la figura 9 muestra las dos cantidades por dominio, que divergen",
           grepl("t09_dominios_entre.csv", fig_src, fixed = TRUE) &&
             grepl("t09_dominios_rasgo.csv", fig_src, fixed = TRUE))
 
+comprobar("la figura 10 existe en los cuatro formatos",
+          all(file.exists(file.path(PAPER_FIG, paste0("figure10_hypotheses",
+              c(".pdf", ".png", "_doc.pdf", "_doc.png"))))))
+
+# Los ocho contrastes de hipotesis tienen que quedar repartidos sin perder
+# ninguno: cuatro en el panel A, uno en el panel B, tres reportados fuera.
+comprobar("el pie de la figura 10 reparte las ocho hipotesis sin descuadre",
+          grepl("remaining three are reported", fig_src, fixed = TRUE))
+
 comprobar("el guion de figuras lee las cifras del JSON",
           grepl("cifras.json", fig_src, fixed = TRUE))
 # El Metodo dice que esa cantidad no es la formula g. Ninguna figura puede
