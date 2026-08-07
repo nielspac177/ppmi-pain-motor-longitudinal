@@ -1,4 +1,4 @@
-# Bucle de revisión por pares: seis rondas con miradas rotadas
+# Bucle de revisión por pares: rondas sucesivas con miradas rotadas
 
 > Documento de encargo para un agente con contexto limpio que va a someter el
 > artículo a rondas sucesivas de revisión. Complementa a
@@ -23,7 +23,7 @@ La observación empírica del proyecto es que el rendimiento de una ronda depend
 casi por completo del formato del encargo. Pedir una revisión genérica devuelve
 generalidades inservibles. Pedir a dos revisores con papeles distintos que
 verifiquen contra el código una lista explícita de lo que el autor afirma haber
-corregido produjo la práctica totalidad de los hallazgos de las seis rondas
+corregido produjo la práctica totalidad de los hallazgos de las nueve rondas
 anteriores. El formato es la variable que importa.
 
 ---
