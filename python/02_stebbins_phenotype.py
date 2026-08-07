@@ -77,6 +77,32 @@ PIGD_P2 = ["NP2WALK", "NP2FREZ"]
 TREMOR_ITEMS = TREMOR_P3 + TREMOR_P2
 PIGD_ITEMS = PIGD_P3 + PIGD_P2
 
+# Dominios motores de la Parte III, para descomponer el desenlace.
+#
+# La hipotesis mecanistica que motiva esta descomposicion: si dolor y severidad
+# motora covarian porque comparten un mismo estado patologico de red (descarga en
+# salvas y oscilaciones beta exageradas), la covariacion deberia concentrarse en
+# el eje BRADICINESIA-RIGIDEZ, que es el que depende de ese patron, y estar
+# ausente en el TEMBLOR, que no lo es. Es una prediccion diferencial y falsable
+# dentro de la misma escala, de modo que no la explica un artefacto de medida
+# comun a todo el instrumento.
+RIGIDEZ = ["NP3RIGN", "NP3RIGRU", "NP3RIGLU", "NP3RIGRL", "NP3RIGLL"]
+BRADICINESIA = ["NP3FTAPR", "NP3FTAPL", "NP3HMOVR", "NP3HMOVL",
+                "NP3PRSPR", "NP3PRSPL", "NP3TTAPR", "NP3TTAPL",
+                "NP3LGAGR", "NP3LGAGL", "NP3BRADY"]
+AXIAL = ["NP3GAIT", "NP3FRZGT", "NP3PSTBL", "NP3POSTR", "NP3RISNG"]
+BULBAR = ["NP3SPCH", "NP3FACXP"]
+TEMBLOR_P3_TODO = TREMOR_P3
+
+DOMINIOS = {
+    "rigidez": RIGIDEZ,
+    "bradicinesia": BRADICINESIA,
+    "axial": AXIAL,
+    "bulbar": BULBAR,
+    "temblor": TEMBLOR_P3_TODO,
+}
+ITEMS_P3_TODOS = sorted(set(RIGIDEZ + BRADICINESIA + AXIAL + BULBAR + TEMBLOR_P3_TODO))
+
 KEEP_VISITS = ["BL", "V04", "V06", "V08", "V10", "V12"]
 
 TD_CUT = 1.15
@@ -165,7 +191,8 @@ def build(p3_state):
     p2 = (p2.sort_values(["PATNO", "EVENT_ID"])
             .drop_duplicates(subset=["PATNO", "EVENT_ID"], keep="first"))
 
-    df = p3[["PATNO", "EVENT_ID"] + TREMOR_P3 + PIGD_P3].merge(
+    cols_p3 = sorted(set(TREMOR_P3 + PIGD_P3 + ITEMS_P3_TODOS))
+    df = p3[["PATNO", "EVENT_ID"] + cols_p3].merge(
         p2[["PATNO", "EVENT_ID"] + TREMOR_P2 + PIGD_P2],
         on=["PATNO", "EVENT_ID"], how="left")
 
@@ -198,6 +225,13 @@ def build(p3_state):
     df["np3_tremor_sum"] = df[TREMOR_P3].sum(axis=1, min_count=len(TREMOR_P3))
     df["np3_pigd_sum"] = df[PIGD_P3].sum(axis=1, min_count=len(PIGD_P3))
     df["np3_clasificadores_sum"] = df["np3_tremor_sum"] + df["np3_pigd_sum"]
+
+    # Subpuntuaciones por dominio motor. min_count exige el item completo: una
+    # suma parcial no es comparable entre pacientes.
+    for nombre, items in DOMINIOS.items():
+        for c in items:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+        df[f"dom_{nombre}"] = df[items].sum(axis=1, min_count=len(items))
 
     df["phenotype"] = [classify(r, t, p) for r, t, p in
                        zip(df["td_pigd_ratio"], df["tremor_mean"], df["pigd_mean"])]
@@ -244,7 +278,13 @@ def main():
                "tremor_mean_avail", "pigd_mean_avail", "td_pigd_ratio_avail",
                "phenotype_avail", "phenotype_cero_indet", "phenotype_cero_excl",
                "denominador_cero",
-               "np3_tremor_sum", "np3_pigd_sum", "np3_clasificadores_sum"])
+               "np3_tremor_sum", "np3_pigd_sum", "np3_clasificadores_sum"]
+            + [f"dom_{k}" for k in DOMINIOS]
+            # Items individuales de la Parte III: los necesita el contraste de la
+            # via periferica (miembro inferior frente a superior), que no puede
+            # hacerse con las sumas por dominio.
+            + [c for c in ITEMS_P3_TODOS
+               if c not in TREMOR_ITEMS + PIGD_ITEMS])
     off[cols].to_csv(OUT / "stebbins.csv", index=False)
     print(f"\nEscrito {OUT/'stebbins.csv'}: filas={len(off)}")
 

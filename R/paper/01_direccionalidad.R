@@ -185,10 +185,25 @@ f_vent <- function(m, term, etiqueta, sd_des, sd_exp) {
          singular = NA)
 }
 
+# Los dos modelos anteriores NO se ajustan sobre las mismas personas: el dolor
+# esta disponible en mas visitas que la puntuacion motora, de modo que cada
+# direccion usa su propio conjunto maximo. Para comparar direcciones hay que
+# hacerlo sobre el conjunto COMUN completo, y esa es la comparacion que explica
+# la asimetria publicada en el trabajo previo.
+comun <- panel |>
+  filter(!is.na(dolor_bl), !is.na(motor_bl), !is.na(dolor_v04), !is.na(motor_v04),
+         !is.na(age_bl), !is.na(dur_bl), !is.na(moca_bl))
+vent1c <- lm(motor_v04 ~ dolor_bl + motor_bl + age_bl + sexo + dur_bl + moca_bl, data = comun)
+vent2c <- lm(dolor_v04 ~ motor_bl + dolor_bl + age_bl + sexo + dur_bl + moca_bl, data = comun)
+
 ventana <- bind_rows(
-  f_vent(vent1, "dolor_bl", "Ventana BL->V04: dolor -> motor", sd_motor_bl, sd_dolor_bl),
-  f_vent(vent2, "motor_bl", "Ventana BL->V04: motor -> dolor", sd_dolor_bl, sd_motor_bl)
+  f_vent(vent1, "dolor_bl", "Conjunto propio: dolor -> motor", sd_motor_bl, sd_dolor_bl),
+  f_vent(vent2, "motor_bl", "Conjunto propio: motor -> dolor", sd_dolor_bl, sd_motor_bl),
+  f_vent(vent1c, "dolor_bl", "Panel COMUN completo: dolor -> motor", sd_motor_bl, sd_dolor_bl),
+  f_vent(vent2c, "motor_bl", "Panel COMUN completo: motor -> dolor", sd_dolor_bl, sd_motor_bl)
 )
+cat(sprintf("\nPanel comun completo: n = %d (frente a %d y %d de cada conjunto propio)\n",
+            nrow(comun), nobs(vent1), nobs(vent2)))
 print(ventana |> select(modelo, n_obs, estimacion, ic_bajo, ic_alto, p, est_de))
 resultados$ventana <- ventana
 
@@ -316,7 +331,27 @@ ajustar_sem <- function(txt, etiqueta) {
 }
 
 clpm <- ajustar_sem(clpm_txt, "CLPM clasico")
-riclpm <- ajustar_sem(riclpm_txt, "RI-CLPM")
+riclpm <- ajustar_sem(riclpm_txt, "RI-CLPM restringido")
+
+# El modelo restringido impone igualdad de los rezagos entre olas, y esa
+# restriccion se RECHAZA (ver R/paper/02_refutacion_riclpm.R, prueba R1). No se
+# puede presentar como primario un modelo que los datos rechazan, de modo que el
+# primario pasa a ser el LIBRE y el restringido queda como referencia.
+riclpm_libre_txt <- {
+  ix <- 1:6
+  t <- c(paste0("RId =~ ", paste(paste0("1*d", ix), collapse = " + ")),
+         paste0("RIm =~ ", paste(paste0("1*m", ix), collapse = " + ")),
+         paste0("wd", ix, " =~ 1*d", ix), paste0("wm", ix, " =~ 1*m", ix),
+         paste0("d", ix, " ~~ 0*d", ix), paste0("m", ix, " ~~ 0*m", ix))
+  for (k in 2:6) {
+    t <- c(t, sprintf("wd%d ~ a%d*wd%d + b%d*wm%d", k, k, k - 1, k, k - 1),
+              sprintf("wm%d ~ c%d*wd%d + e%d*wm%d", k, k, k - 1, k, k - 1))
+  }
+  paste(c(t, "RId ~~ RIm", "RId ~~ RId", "RIm ~~ RIm",
+          "RId ~~ 0*wd1 + 0*wm1", "RIm ~~ 0*wd1 + 0*wm1",
+          paste0("wd", ix, " ~~ wm", ix)), collapse = "\n")
+}
+riclpm_libre <- ajustar_sem(riclpm_libre_txt, "RI-CLPM libre (PRIMARIO)")
 
 extraer_sem <- function(obj, etiqueta_modelo) {
   if (is.null(obj)) return(NULL)
@@ -376,6 +411,30 @@ sintesis <- bind_rows(
 ) |>
   select(fuente, modelo, n_obs, estimacion, ic_bajo, ic_alto, p, est_de, singular)
 print(as.data.frame(sintesis), digits = 4)
+
+ajustes <- bind_rows(
+  if (!is.null(clpm)) tibble(modelo = "CLPM clasico", cfi = clpm$fm[["cfi.robust"]],
+                             rmsea = clpm$fm[["rmsea.robust"]], srmr = clpm$fm[["srmr"]]),
+  if (!is.null(riclpm)) tibble(modelo = "RI-CLPM restringido", cfi = riclpm$fm[["cfi.robust"]],
+                               rmsea = riclpm$fm[["rmsea.robust"]], srmr = riclpm$fm[["srmr"]]),
+  if (!is.null(riclpm_libre)) tibble(modelo = "RI-CLPM libre (PRIMARIO)",
+                                     cfi = riclpm_libre$fm[["cfi.robust"]],
+                                     rmsea = riclpm_libre$fm[["rmsea.robust"]],
+                                     srmr = riclpm_libre$fm[["srmr"]]))
+subtitulo("Indices de ajuste de los tres modelos")
+print(as.data.frame(ajustes), digits = 4)
+guardar_tabla(ajustes, "t01_ajuste_modelos.csv")
+
+# Correlacion de rasgo en el modelo PRIMARIO (libre).
+if (!is.null(riclpm_libre)) {
+  pel <- riclpm_libre$pe
+  ril <- pel[pel$lhs == "RId" & pel$rhs == "RIm" & pel$op == "~~", ]
+  rasgo_libre <- tibble(modelo = "RI-CLPM libre (PRIMARIO)",
+                        r = ril$std.all[1], ee = ril$se[1], p = ril$pvalue[1])
+  subtitulo("Correlacion de rasgo en el modelo primario (libre)")
+  print(as.data.frame(rasgo_libre), digits = 4)
+  guardar_tabla(rasgo_libre, "t01_correlacion_rasgo_libre.csv")
+}
 
 guardar_tabla(sintesis, "t01_direccionalidad_rezagos.csv")
 guardar_tabla(sem_tab, "t01_direccionalidad_sem.csv")

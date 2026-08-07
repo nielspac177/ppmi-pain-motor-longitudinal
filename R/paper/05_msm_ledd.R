@@ -80,6 +80,13 @@ cat("\n  LECTURA. Si este coeficiente es distinto de cero, la LEDD es confusor\n
     " AFECTADO por la exposicion previa y los g-metodos estan justificados. Si\n",
     " es nulo, la regresion estandar basta y hay que decirlo.\n", sep = "")
 
+# Aplicacion de la regla, sin excepciones. Se evalua aqui y su resultado se
+# arrastra a la sintesis, para que no dependa de como se lea la prosa despues.
+REGLA_CUMPLIDA <- est_l$p[1] < ALPHA
+cat(sprintf("\n  VEREDICTO DE LA REGLA: p = %.4f -> %s\n", est_l$p[1],
+            if (REGLA_CUMPLIDA) "se cumple, los g-metodos estan justificados"
+            else "NO se cumple. El modelo estructural marginal pasa a SENSIBILIDAD."))
+
 # Y el otro brazo: la LEDD previa, predice el dolor actual?
 sub_d <- panel |> filter(!is.na(dolor_int), !is.na(LEDD_prev), !is.na(dolor_int_prev))
 m_dol <- lm(dolor_int ~ LEDD_prev + dolor_int_prev + age_yrs + sexo +
@@ -267,9 +274,18 @@ salidas$msm_bootstrap <- tibble(
   ic_bajo = ic_boot[[1]], ic_alto = ic_boot[[2]], replicas = length(boot_est))
 
 # =============================================================================
-# 4. ESTIMACION G POR SUSTITUCION
+# 4. LO QUE NO SE PUEDE PRESENTAR COMO ESTIMACION G
 # =============================================================================
-titulo("4. Estimacion g por sustitucion (comprobacion independiente)")
+titulo("4. Contraste por sustitucion: NO es una estimacion g")
+
+cat("\n  Este contraste se conserva por trazabilidad y se reporta como lo que es.\n",
+    "  Mantiene la LEDD y el estado motor previos en sus valores OBSERVADOS bajo\n",
+    "  los dos regimenes. Como la LEDD es, por la premisa del propio analisis, un\n",
+    "  confusor AFECTADO por la exposicion previa, fijarla condiciona sobre un\n",
+    "  descendiente de la exposicion. Una formula g exige simular hacia delante\n",
+    "  las covariables variables en el tiempo bajo cada regimen.\n",
+    "  Por tanto NO es una comprobacion independiente del modelo estructural\n",
+    "  marginal, y su coincidencia con el no corrobora nada.\n", sep = "")
 
 # Se modela el desenlace condicionando en la historia, y se promedia sobre la
 # distribucion de los confusores bajo dos regimenes: dolor siempre presente y
@@ -294,10 +310,10 @@ g_boot <- replicate(B, {
 })
 g_boot <- g_boot[is.finite(g_boot)]
 ic_g <- quantile(g_boot, c(0.025, 0.975))
-cat(sprintf("\n  contraste g (dolor siempre vs nunca) = %.4f\n", gcomp))
+cat(sprintf("\n  contraste por sustitucion (dolor siempre vs nunca) = %.4f\n", gcomp))
 cat(sprintf("  IC 95 %% por remuestreo               = %.4f a %.4f (%d replicas)\n",
             ic_g[1], ic_g[2], length(g_boot)))
-salidas$gcomp <- tibble(especificacion = "estimacion g por sustitucion",
+salidas$gcomp <- tibble(especificacion = "sustitucion con covariables fijadas (NO es formula g)",
                         estimacion = gcomp, ic_bajo = ic_g[[1]], ic_alto = ic_g[[2]],
                         replicas = length(g_boot))
 
@@ -314,6 +330,17 @@ sint <- bind_rows(
 )
 print(as.data.frame(sint), digits = 4)
 salidas$sintesis <- sint
+
+subtitulo("Estatus del modelo estructural marginal")
+estatus <- tibble(
+  regla = "dolor(t-1) -> LEDD(t) | LEDD(t-1) distinto de cero",
+  p_observada = est_l$p[1],
+  cumplida = REGLA_CUMPLIDA,
+  consecuencia = if (REGLA_CUMPLIDA) "MSM como analisis principal"
+                 else "MSM DEGRADADO a analisis de sensibilidad")
+print(as.data.frame(estatus), digits = 4)
+salidas$estatus <- estatus
+guardar_tabla(estatus, "t05_estatus_regla.csv")
 
 titulo("Guardado")
 guardar_tabla(est_l, "t05_dolor_a_ledd.csv")

@@ -45,6 +45,50 @@ for (k in usados) {
   completo <- gsub(paste0("\\{\\{", k, "\\}\\}"), cifras[[k]], completo, perl = TRUE)
 }
 
+# ---------------------------------------------------------------------------
+# CITAS. El texto usa [@clave]. Se numeran por orden de aparicion, se sustituyen
+# por superindices y se compone la lista de referencias al final.
+#
+# ABORTA si el texto cita una clave que no existe en manuscript/referencias.json.
+# Es la misma salvaguarda que el generador de la tesis, y existe por la misma
+# razon: ya impidio publicar una cita inventada.
+# ---------------------------------------------------------------------------
+REFS <- file.path(ROOT, "manuscript", "referencias.json")
+if (!file.exists(REFS)) stop("No existe ", REFS)
+refs <- fromJSON(REFS, simplifyVector = FALSE)
+
+claves_usadas <- unique(unlist(regmatches(
+  completo, gregexpr("\\[@[A-Za-z0-9_]+\\]", completo))))
+claves_usadas <- gsub("^\\[@|\\]$", "", claves_usadas)
+
+sin_ref <- setdiff(claves_usadas, names(refs))
+if (length(sin_ref)) {
+  cat("\nERROR. El manuscrito cita claves que no existen en referencias.json:\n")
+  for (k in sin_ref) cat("  [@", k, "]\n", sep = "")
+  stop("Citas sin referencia: ", length(sin_ref))
+}
+
+# Numeracion por orden de aparicion en el texto.
+orden <- character(0)
+pos <- gregexpr("\\[@[A-Za-z0-9_]+\\]", completo)[[1]]
+if (pos[1] != -1) {
+  todas <- gsub("^\\[@|\\]$", "",
+                regmatches(completo, gregexpr("\\[@[A-Za-z0-9_]+\\]", completo))[[1]])
+  orden <- unique(todas)
+}
+for (i in seq_along(orden)) {
+  completo <- gsub(paste0("\\[@", orden[i], "\\]"), paste0("^", i, "^"),
+                   completo, perl = TRUE)
+}
+if (length(orden)) {
+  lista <- paste0(seq_along(orden), ". ", vapply(orden, function(k) refs[[k]], character(1)))
+  completo <- paste0(completo, "\n\n---\n\n## References\n\n",
+                     paste(lista, collapse = "\n\n"), "\n")
+}
+cat(sprintf("\n  citas en el texto      : %d claves distintas\n", length(orden)))
+cat(sprintf("  referencias disponibles: %d\n", length(refs)))
+cat(sprintf("  referencias sin usar   : %d\n", length(refs) - length(orden)))
+
 restantes <- unlist(regmatches(completo, gregexpr("\\{\\{[^}]*\\}\\}", completo)))
 if (length(restantes)) stop("Quedaron marcadores sin sustituir: ",
                             paste(unique(restantes), collapse = ", "))

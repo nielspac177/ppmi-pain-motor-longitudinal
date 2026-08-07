@@ -1,0 +1,6 @@
+etiqueta,definicion,n
+Cohorte basal,filas con EVENT_ID = BL tras las exclusiones de elegibilidad,1190
+Cohorte basal con ambas medidas,"de las anteriores, con dolor Y desenlace motor presentes en la basal",1157
+Panel analitico (pacientes),"pacientes con al menos una visita con ambas medidas, en cualquier ola",1174
+Panel analitico (observaciones),"visitas con ambas medidas, sumadas sobre las seis olas",3180
+Muestra transversal de 12 meses,visitas V04 con ambas medidas; coincide con el flujo STROBE congelado,711

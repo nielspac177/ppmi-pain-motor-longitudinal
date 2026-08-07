@@ -280,3 +280,40 @@ guardar_tabla(todo, "t02_refutacion_riclpm.csv")
 saveRDS(pruebas, file.path(PAPER_MOD, "refutacion_riclpm.rds"))
 
 cat("\n\nListo: R/paper/02_refutacion_riclpm.R\n")
+
+# =============================================================================
+# R8 — DESENLACE AUTOINFORMADO FRENTE A DESENLACE DEL EXAMINADOR
+# =============================================================================
+titulo("R8 — MDS-UPDRS Parte II (autoinformada) como desenlace paralelo")
+
+cat("\n  LA PREGUNTA. La exposicion es autoinformada y el desenlace primario lo\n",
+    "  puntua un examinador, lo que descarta varianza de metodo compartida pero\n",
+    "  tambien introduce una asimetria: si la relacion entre dolor y funcion\n",
+    "  motora vive en la EXPERIENCIA del paciente y no en el signo explorado,\n",
+    "  aparecera con la Parte II y no con la Parte III.\n",
+    "  Es una prediccion diferencial, no una repeticion: las dos partes miden el\n",
+    "  mismo dominio motor por vias distintas.\n", sep = "")
+
+w8 <- a_ancho(d, "dolor_int", "UPDRS2")
+fit8 <- ajustar(riclpm_sintaxis(6, libre = FALSE), w8, "Parte II autoinformada")
+r8 <- resumen_cruzados(fit8, "R8 desenlace Parte II (autoinformado)")
+print(as.data.frame(r8), digits = 4)
+pruebas$R8 <- r8
+
+subtitulo("Contraste directo: Parte II frente a Parte III")
+if (!is.null(r8) && !is.null(pruebas$R0)) {
+  comp8 <- bind_rows(
+    pruebas$R0 |> mutate(desenlace = "Parte III (examinador)"),
+    r8 |> mutate(desenlace = "Parte II (autoinformada)")
+  ) |>
+    select(desenlace, via, estimacion, ic_bajo, ic_alto, p, est_std, r_rasgo, p_rasgo)
+  print(as.data.frame(comp8), digits = 4)
+  pruebas$comparacion_partes <- comp8
+  guardar_tabla(comp8, "t02_parte2_vs_parte3.csv")
+
+  cat("\n  LECTURA. Si la via intrapersonal aparece con la Parte II y no con la\n",
+      "  Parte III, el hallazgo deja de ser un nulo: la relacion existe en la\n",
+      "  funcion que el paciente refiere y no en el signo que el clinico explora.\n",
+      "  Si no aparece en ninguna, el nulo se refuerza y no es un artefacto de\n",
+      "  haber elegido un desenlace poco sensible.\n", sep = "")
+}

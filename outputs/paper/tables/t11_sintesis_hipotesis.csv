@@ -1,0 +1,9 @@
+hipotesis,prediccion,resultado
+H1 ganancia de red compartida,covariacion en rigidez-bradicinesia y no en temblor,"SOSTENIDA (diferencia 0,172; p = 0,001) — ver 09_dominios.R"
+H2 degeneracion no dopaminergica,el dolor NO sigue al DAT; el motor SI,"dolor p = 0,766; motor p = < 0,001"
+H3 dimension latente de gravedad,el dolor carga como los dominios motores en un factor general,"razon de cargas 0.32; liberar residuo NO mejora (p = 0,227)"
+H4 punto de ajuste constitucional,correlacion intraclase alta del dolor,ICC dolor = 0.392 frente a motor = 0.535
+H5 prodromica,la correlacion existe antes del diagnostico,"SOSTENIDA (r = 0,213; p = 0,002) — ver 10_controles_negativos.R"
+H6 carga de alfa-sinucleina,mayor covariacion en positivos al SAA,"interaccion p = 0,657"
+H7 genotipo GBA,mayor covariacion en portadores,"interaccion p = 0,124"
+H8 via periferica,mayor covariacion en miembro inferior,"diferencia p = 0,184"

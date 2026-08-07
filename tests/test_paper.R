@@ -127,13 +127,13 @@ seccion("Longitudinal y atricion (ADR 0009 y 0010)")
 
 mix <- T("t04_mixto.csv")
 comprobar("el dolor basal sigue asociandose con el NIVEL motor",
-          mix$p[mix$termino == "dolor basal (nivel)"][1] < 0.05)
+          mix$p[grepl("^dolor basal \\(nivel", mix$termino)][1] < 0.05)
 comprobar("el dolor basal sigue SIN asociarse con la PENDIENTE",
           mix$p[mix$termino == "dolor basal x tiempo"][1] > 0.05)
 
 mixw <- T("t04_mixto_ipcw.csv")
 comprobar("ponderar por censura no cambia la conclusion sobre el nivel",
-          mixw$p[mixw$termino == "dolor basal (nivel)"][1] < 0.05)
+          mixw$p[grepl("^dolor basal \\(nivel", mixw$termino)][1] < 0.05)
 comprobar("ponderar por censura no cambia la conclusion sobre la pendiente",
           mixw$p[mixw$termino == "dolor basal x tiempo"][1] > 0.05)
 
@@ -175,7 +175,7 @@ seccion("Confusion variable en el tiempo (ADR 0010)")
 msm <- T("t05_sintesis_msm.csv")
 crudo <- msm$estimacion[grepl("SIN ajustar", msm$especificacion)][1]
 iptw <- msm$estimacion[grepl("marginal", msm$especificacion)][1]
-gcomp <- msm$estimacion[grepl("estimacion g", msm$especificacion)][1]
+gcomp <- msm$estimacion[grepl("sustitucion", msm$especificacion)][1]
 
 comprobar("el modelo estructural marginal sigue ATENUANDO frente al estandar",
           iptw < crudo)
@@ -194,6 +194,147 @@ comprobar("la ponderacion sigue MEJORANDO el balance de la dosis previa",
 pi <- T("t05_pesos_iptw.csv")
 comprobar("los pesos de tratamiento siguen centrados cerca de uno",
           all(pi$media > 0.9 & pi$media < 1.1))
+
+
+# ------------------------------------------------------- DOMINIOS MOTORES ---
+seccion("Descomposicion por dominio motor (H1)")
+
+dom <- T("t09_dominios_entre.csv")
+comprobar("el temblor sigue SIN asociarse con el dolor",
+          dom$p[dom$dominio == "temblor"][1] > 0.05)
+comprobar("los otros cuatro dominios siguen asociandose",
+          all(dom$p[!dom$dominio %in% c("temblor", "TOTAL (referencia)")] < 0.05))
+dif <- T("t09_dominios_diferencial.csv")
+comprobar("el eje rigidez-bradicinesia sigue difiriendo del temblor",
+          dif$p[1] < 0.05 && dif$ic_bajo[1] > 0)
+ras <- T("t09_dominios_rasgo.csv")
+comprobar("el dominio axial sigue teniendo la correlacion de rasgo mas alta",
+          ras$r_rasgo[ras$dominio == "axial"][1] ==
+            max(ras$r_rasgo[ras$dominio != "TOTAL (referencia)"], na.rm = TRUE))
+
+# --------------------------------------------------- CONTROLES DE COHORTE ---
+seccion("Controles negativos de cohorte (H5)")
+
+coh <- T("t10_controles_negativos.csv")
+comprobar("las tres cohortes siguen presentes", nrow(coh) == 3)
+comprobar("la correlacion de rasgo sigue siendo positiva en las tres",
+          all(coh$r_rasgo > 0))
+comprobar("los controles sanos siguen teniendo un recorrido motor mucho menor",
+          coh$de_motor[grepl("Controles", coh$cohorte)] <
+            coh$de_motor[grepl("Parkinson", coh$cohorte)] / 3)
+cmp <- T("t10_comparacion_correlaciones.csv")
+comprobar("Parkinson y controles siguen SIN diferenciarse significativamente",
+          cmp$p[grepl("controles", cmp$contraste)][1] > 0.05)
+comprobar("el intervalo de esa diferencia sigue siendo ancho (no concluyente)", {
+  f <- cmp |> filter(contraste == "Parkinson vs controles sanos")
+  (f$ic_alto[1] - f$ic_bajo[1]) > 0.15
+})
+
+# ---------------------------------------------- CONTRASTE DE HIPOTESIS ------
+seccion("Contraste de hipotesis mecanisticas")
+
+h2 <- T("t11_h2_dat.csv") |> filter(region == "dat_estriado")
+comprobar("la severidad motora sigue siguiendo al DAT estriatal",
+          h2$p[h2$desenlace == "motor"][1] < 0.001 &&
+            h2$beta_de[h2$desenlace == "motor"][1] < 0)
+comprobar("el dolor sigue SIN seguir al DAT estriatal",
+          h2$p[h2$desenlace == "dolor"][1] > 0.05)
+h2b <- T("t11_h2_ajuste_dat.csv")
+comprobar("ajustar por DAT sigue sin cambiar la asociacion dolor-motor",
+          abs(h2b$b[1] - h2b$b[2]) < 0.02)
+
+h3 <- T("t11_h3_cargas.csv")
+comprobar("el temblor sigue SIN cargar en el factor general",
+          h3$p[h3$indicador == "temblor"][1] > 0.05)
+comprobar("el dolor sigue cargando menos que los dominios motores", {
+  cd <- h3$carga_std[h3$indicador == "dolor"]
+  cm <- mean(h3$carga_std[h3$indicador %in% c("rigidez", "bradicinesia", "axial", "bulbar")])
+  cd > 0 && cd < cm / 2
+})
+# La prueba anterior leia el residuo por puntuaciones factoriales, que era un
+# artefacto de parte-todo. La sustituye la prueba anidada correcta.
+h3a <- T("t11_h3_anidado.csv")
+comprobar("liberar la covarianza residual dolor-motor no mejora el ajuste",
+          h3a$p[1] > 0.05)
+
+h4 <- T("t11_h4_icc.csv")
+comprobar("el dolor sigue siendo la medida MENOS de rasgo de las cuatro",
+          h4$icc[grepl("Dolor", h4$serie)][1] == min(h4$icc))
+comprobar("la ICC del dolor sigue por debajo de 0,5 (poca senal entre personas)",
+          h4$icc[grepl("Dolor", h4$serie)][1] < 0.5)
+
+h8 <- T("t11_h8_miembros.csv")
+comprobar("no hay gradiente miembro inferior frente a superior",
+          h8$p[grepl("diferencia", h8$region)][1] > 0.05)
+
+sint <- T("t11_sintesis_hipotesis.csv")
+comprobar("la sintesis cubre las ocho hipotesis", nrow(sint) == 8)
+
+
+# ------------------------------------- CORRECCIONES TRAS LA REVISION POR PARES ---
+seccion("Correcciones tras la revision por pares")
+
+aj <- T("t01_ajuste_modelos.csv")
+comprobar("el RI-CLPM libre sigue ajustando mejor que el CLPM clasico",
+          aj$cfi[grepl("libre", aj$modelo)][1] > aj$cfi[grepl("^CLPM", aj$modelo)][1])
+rl <- T("t01_correlacion_rasgo_libre.csv")
+comprobar("la correlacion de rasgo sobrevive al modelo LIBRE (el primario)",
+          rl$r[1] > 0 && rl$p[1] < 0.05)
+
+vc <- T("t01_direccionalidad_rezagos.csv") |> filter(grepl("COMUN", modelo))
+comprobar("el analisis de panel COMUN existe y tiene las dos direcciones",
+          nrow(vc) == 2)
+comprobar("en el panel comun la direccion motor -> dolor NO alcanza significacion",
+          vc$p[grepl("motor -> dolor", vc$modelo)][1] > 0.05)
+
+an <- T("t11_h3_anidado.csv")
+comprobar("liberar la covarianza residual dolor-motor sigue SIN mejorar el ajuste",
+          an$p[1] > 0.05)
+comprobar("el ajuste del modelo de un factor se exporta", nrow(T("t11_h3_ajuste.csv")) == 1)
+rz <- T("t11_h3_residuos_z.csv")
+comprobar("ningun residuo estandarizado dolor-motor supera |1,96|",
+          all(abs(rz$residuo_z) < 1.96))
+
+dg <- T("t09_diferencial_gds.csv")
+comprobar("la disociacion del temblor NO es especifica del dolor", {
+  dp <- T("t09_dominios_diferencial.csv")
+  dg$p[1] < 0.05 && abs(dg$diferencia[1] - dp$diferencia[1]) < 0.10
+})
+
+er <- T("t05_estatus_regla.csv")
+comprobar("la regla preespecificada del MSM se evalua y se registra", nrow(er) == 1)
+comprobar("la regla NO se cumple, y el MSM queda como sensibilidad",
+          !er$cumplida[1] && grepl("SENSIBILIDAD|sensibilidad", er$consecuencia[1]))
+
+mw <- T("t04_mixto_ipcw.csv")
+comprobar("el modelo ponderado usa varianza robusta (EE mayor que el no ponderado)", {
+  mu <- T("t04_mixto.csv")
+  mw$ee[grepl("nivel", mw$termino)][1] > mu$ee[grepl("nivel", mu$termino)][1]
+})
+
+ctrl <- T("t04_controles_negativos.csv")
+comprobar("los DOS controles negativos siguen exportandose", nrow(ctrl) == 2)
+comprobar("el control del GDS sigue siendo significativo (control que FALLA)",
+          ctrl$p[ctrl$desenlace == "gds_v04"][1] < 0.05)
+
+manu_t <- paste(readLines(file.path(ROOT, "manuscript", "paper.md"), warn = FALSE), collapse = "\n")
+comprobar("el manuscrito reporta el control negativo del GDS",
+          grepl("ctrl_gds_p", manu_t))
+comprobar("el manuscrito ya NO afirma que la disociacion distingue al dolor",
+          !grepl("which depression does not show", manu_t))
+comprobar("el manuscrito confronta la diferencia clinicamente importante",
+          grepl("4.63", manu_t))
+comprobar("el titulo del manuscrito sigue siendo sobre DOLOR y sintomas motores",
+          grepl("^# Pain and motor severity", manu_t))
+comprobar("el manuscrito remite a los DAGs causales", grepl("Figure 7", manu_t))
+comprobar("existe la fuente Mermaid de los DAGs longitudinales",
+          file.exists(file.path(ROOT, "docs", "dags-longitudinales.md")))
+comprobar("existe la version TikZ de los DAGs",
+          file.exists(file.path(ROOT, "figuras-tikz", "dags_longitudinales.tex")))
+comprobar("la figura de los DAGs esta generada",
+          file.exists(file.path(ROOT, "outputs", "paper", "figures", "figure7_dags.pdf")))
+comprobar("el manuscrito ya NO usa el residuo por puntuaciones factoriales",
+          !grepl("h3_residual_r", manu_t))
 
 # ----------------------------------------------------------------- CIFRAS ---
 seccion("Cifras y manuscrito")
@@ -218,6 +359,197 @@ if (file.exists(manu)) {
   comprobar("el manuscrito no tiene rayas tipograficas", !grepl("—", txt))
   comprobar("ninguna cifra clave esta tecleada a mano en el texto",
             !grepl("\\b711\\b|\\b1,190\\b|0\\.175", txt))
+}
+
+
+# --------------------------------- SEGUNDA RONDA DE REVISION POR PARES --------
+seccion("Segunda ronda de revision")
+
+fl2 <- T("t12_flujo_poblaciones.csv")
+comprobar("las cinco poblaciones estan definidas en un solo sitio", nrow(fl2) == 5)
+comprobar("la muestra de 12 meses sigue siendo 711",
+          fl2$n[grepl("12 meses", fl2$etiqueta)][1] == 711)
+comprobar("las poblaciones siguen anidadas correctamente",
+          fl2$n[fl2$etiqueta == "Cohorte basal con ambas medidas"] <=
+            fl2$n[fl2$etiqueta == "Cohorte basal"])
+
+mgw <- T("t10_multigrupo_wald.csv")
+comprobar("el SEM multigrupo se ajusta y exporta su prueba de Wald", nrow(mgw) == 1)
+comprobar("la igualdad de correlaciones entre cohortes NO se rechaza", mgw$p[1] > 0.05)
+mgr <- T("t10_multigrupo_rho.csv")
+comprobar("el multigrupo da las tres correlaciones con su EE del modelo",
+          nrow(mgr) == 3 && all(mgr$ee > 0))
+comprobar("el EE del multigrupo es MAYOR que el de Fisher z (que subestimaba)", {
+  fz <- T("t10_comparacion_correlaciones.csv") |> filter(grepl("controles", contraste))
+  mgd <- T("t10_multigrupo_dif.csv") |> filter(grepl("Controles", contraste))
+  (mgd$ic_alto[1] - mgd$ic_bajo[1]) > (fz$ic_alto[1] - fz$ic_bajo[1])
+})
+
+ptv <- T("t04_pesos_ipcw_tv.csv")
+comprobar("el IPCW secuencial con predictores variables se calcula", nrow(ptv) >= 4)
+comprobar("los pesos secuenciales estan MAS dispersos que los basales", {
+  pb <- T("t04_pesos_ipcw.csv")
+  max(ptv$de) > (max(pb$max) - min(pb$min)) / 20
+})
+comprobar("los pesos secuenciales siguen centrados cerca de uno",
+          all(ptv$media > 0.85 & ptv$media < 1.15))
+
+inv <- T("t13_inventario_resumen.csv")
+comprobar("el inventario clasifica los contrastes en tres categorias", nrow(inv) == 3)
+comprobar("hay contrastes primarios declarados",
+          inv$contrastes[inv$categoria == "primario"] > 0)
+
+refs <- fromJSON(file.path(ROOT, "manuscript", "referencias.json"), simplifyVector = FALSE)
+comprobar("la base de referencias existe y no esta vacia", length(refs) > 100)
+comprobar("toda referencia lleva PMID o DOI",
+          all(vapply(refs, function(r) grepl("PMID|doi:", r), logical(1))))
+if (file.exists(manu)) {
+  claves <- unique(gsub("^\\[@|\\]$", "",
+    unlist(regmatches(txt, gregexpr("\\[@[A-Za-z0-9_]+\\]", txt)))))
+  comprobar("el manuscrito ya tiene citas", length(claves) > 20)
+  comprobar("toda clave citada existe en la base de referencias",
+            length(setdiff(claves, names(refs))) == 0)
+  comprobar("el manuscrito declara que el item 1.9 no es un instrumento de dolor",
+            grepl("Pain and Other Sensations", txt))
+  comprobar("el manuscrito declara el inventario de contrastes",
+            grepl("inv_total", txt))
+}
+
+
+# ----------------------------------------- TERCERA RONDA: CORRECCIONES R2 -----
+seccion("Correcciones de la ronda 2")
+
+p2 <- T("t02_parte2_vs_parte3.csv")
+comprobar("el contraste Parte II frente a Parte III se ejecuta", nrow(p2) == 4)
+comprobar("la correlacion de rasgo es MUCHO mayor con la Parte II autoinformada", {
+  r3 <- p2$r_rasgo[p2$desenlace == "Parte III (examinador)"][1]
+  r2 <- p2$r_rasgo[p2$desenlace == "Parte II (autoinformada)"][1]
+  r2 > 2 * r3
+})
+comprobar("con la Parte II la via que sobrevive es motor -> dolor",
+          p2$p[p2$desenlace == "Parte II (autoinformada)" &
+                 p2$via == "desenlace(t-1) -> exposicion(t)"][1] < 0.05)
+
+mtv <- T("t04_mixto_ipcw_tv.csv")
+comprobar("el modelo con pesos secuenciales SI se ajusta", nrow(mtv) == 3)
+comprobar("con pesos secuenciales el nivel sigue y la pendiente sigue nula",
+          mtv$p[grepl("nivel", mtv$termino)][1] < 0.05 &&
+            mtv$p[grepl("x tiempo", mtv$termino)][1] > 0.05)
+
+comprobar("el multigrupo ya NO restringe la dinamica entre cohortes",
+          any(grepl("c\\(a1,a2,a3\\)", readLines(
+            file.path(ROOT, "R", "paper", "10_controles_negativos.R"), warn = FALSE))))
+comprobar("el multigrupo coincide ahora con el modelo de un grupo", {
+  mg <- T("t10_multigrupo_rho.csv"); un <- T("t01_correlacion_rasgo.csv")
+  abs(mg$r[grepl("Parkinson", mg$cohorte)][1] - un$r[1]) < 0.05
+})
+
+inv <- T("t13_inventario_contrastes.csv")
+comprobar("el inventario ya no se cuenta a si mismo", !any(grepl("t13", inv$tabla)))
+
+comprobar("las tablas huerfanas ya no existen",
+          !file.exists(file.path(TAB, "t11_h3_residual.csv")) &&
+            !file.exists(file.path(TAB, "t10_multigrupo.csv")))
+
+if (file.exists(manu)) {
+  comprobar("el manuscrito ya NO afirma que Liu 2020 midiera dolor",
+            !grepl("extends a previous report in this cohort that pain did not feature", txt))
+  comprobar("el manuscrito ya NO llama formula g a la sustitucion",
+            !grepl("cross-checked by g-computation|and g-computation \\{\\{msm_gcomp", txt))
+  comprobar("el manuscrito ya NO dice que el efecto sea clinicamente util",
+            !grepl("which is clinically useful", txt))
+  comprobar("el resumen usa la correlacion del modelo PRIMARIO (libre)",
+            grepl("rasgo_libre_r", txt))
+  comprobar("la limitacion de fiabilidad esta en Limitaciones",
+            grepl("most important threat to the central claim", txt))
+  comprobar("se cita el trabajo competidor de panel cruzado en PPMI",
+            grepl("hodgson2026_ppmi_crosslag", txt))
+  comprobar("no queda ningun encabezado colisionado con una frase",
+            !grepl("[a-z]\\. ### ", txt))
+}
+
+
+# ----------------------------------------------- ANALISIS CLINICOS -----------
+seccion("Analisis clinicos")
+
+an <- T("t14_analgesicos.csv")
+comprobar("el ajuste por analgesicos se ejecuta con sus cuatro variantes", nrow(an) == 4)
+comprobar("la asociacion SOBREVIVE al ajuste por analgesicos",
+          an$p[grepl("sin aspirina", an$ajuste)][1] < 0.05)
+comprobar("el analgesico atenua, pero menos de la mitad",
+          (1 - an$beta_de[2] / an$beta_de[1]) > 0 &&
+            (1 - an$beta_de[2] / an$beta_de[1]) < 0.5)
+am <- T("t14_analgesico_motor.csv")
+comprobar("el analgesico SI predice la severidad motora (es confusor real)",
+          am$p[1] < 0.05)
+
+se <- T("t14_sexo_estratos.csv")
+comprobar("la asociacion es mayor en mujeres que en varones",
+          se$beta_de[1] > se$beta_de[2])
+sx <- T("t14_sexo_interaccion.csv")
+comprobar("la interaccion por sexo NO alcanza significacion", sx$p[1] > 0.05)
+
+p4 <- T("t14_parte4.csv")
+comprobar("la asociacion sobrevive al ajuste por complicaciones motoras",
+          p4$p[2] < 0.05)
+p4e <- T("t14_parte4_estratos.csv")
+comprobar("la asociacion esta presente con y sin complicaciones motoras",
+          all(p4e$p < 0.05, na.rm = TRUE))
+
+par <- T("t14_paralelos_parte1.csv")
+comprobar("se contrastan cuatro sintomas de la Parte I en paralelo", nrow(par) == 4)
+comprobar("el dolor NO destaca sobre los otros sintomas no motores",
+          par$r_rasgo[par$sintoma == "dolor"][1] <=
+            max(par$r_rasgo[par$sintoma != "dolor"]))
+comprobar("al menos otro sintoma de la Parte I supera al dolor",
+          any(par$r_rasgo[par$sintoma != "dolor"] > par$r_rasgo[par$sintoma == "dolor"][1]))
+
+if (file.exists(manu)) {
+  comprobar("el manuscrito reporta el ajuste por analgesicos",
+            grepl("analg_atenua", txt))
+  comprobar("el manuscrito reporta que el dolor no destaca entre los no motores",
+            grepl("par_insomnio_r", txt))
+  comprobar("la carga general se presenta como lo que los datos apoyan",
+            grepl("not as an alternative we failed to exclude", txt))
+}
+
+
+# ------------------------------------ VERIFICACION DE LA RONDA 3 --------------
+seccion("Verificacion de la ronda 3")
+
+pa <- T("t14_prevalencia_analgesicos.csv")
+comprobar("la prevalencia de analgesicos se exporta", nrow(pa) == 3)
+comprobar("la prevalencia de analgesicos NO coincide con la retencion", {
+  cif <- fromJSON(CIFRAS, simplifyVector = FALSE)
+  cif$analg_prev != cif$ret2_pct_V12
+})
+
+se <- T("t14_sexo_estratos.csv")
+comprobar("la tabla de sexo conserva las etiquetas y no los codigos",
+          any(grepl("Mujer|Varon", as.character(se$sexo))))
+comprobar("el estrato de mujeres es el mas pequeno de los dos (65 % varones)",
+          se$n[grepl("Mujer", as.character(se$sexo))][1] <
+            se$n[grepl("Varon", as.character(se$sexo))][1])
+
+inv <- T("t13_inventario_contrastes.csv")
+comprobar("el inventario incluye las tablas de los analisis clinicos",
+          any(grepl("^t14", inv$tabla)))
+comprobar("el inventario captura las p de los sintomas paralelos",
+          any(inv$tabla == "t14_paralelos_parte1.csv"))
+
+if (file.exists(manu)) {
+  comprobar("el manuscrito ya NO llama confusor al analgesico",
+            !grepl("so it is a genuine confounder", txt))
+  comprobar("el manuscrito explica que el analgesico es descendiente del dolor",
+            grepl("descendant of the exposure", txt))
+  comprobar("ya no queda ninguna frase que diga que la carga general no se excluyo",
+            !grepl("remains live|we cannot exclude it", txt))
+  comprobar("el resumen incorpora la no especificidad",
+            grepl("not specific to pain", substr(txt, 1, 6000)))
+  comprobar("el resumen reporta los tres indices de ajuste",
+            grepl("fit_ri_libre_rmsea", txt))
+  comprobar("las lineas convergentes ya no se presentan como independientes",
+            !grepl("five independent line", txt))
 }
 
 # ------------------------------------------------------------------ CIERRE --

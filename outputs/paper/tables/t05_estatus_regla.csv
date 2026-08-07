@@ -1,0 +1,2 @@
+regla,p_observada,cumplida,consecuencia
+dolor(t-1) -> LEDD(t) | LEDD(t-1) distinto de cero,0.0798083119216445,FALSE,MSM DEGRADADO a analisis de sensibilidad

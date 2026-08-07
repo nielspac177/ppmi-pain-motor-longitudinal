@@ -5,10 +5,17 @@ Parkinson's Progression Markers Initiative (PPMI), covering six annual
 assessments from baseline through year 5.
 
 **Headline finding.** Pain and motor severity covary as stable characteristics of
-the patient rather than one preceding the other. Pain marks a higher level of
-motor impairment, not a faster rate of progression. Once stable between-person
+the patient rather than one preceding the other. Once stable between-person
 differences are separated from within-person change, neither direction of
-temporal precedence survives.
+temporal precedence survives, and the reciprocal causation a conventional
+cross-lagged model reports on the same data is an artefact of that conflation.
+
+Five converging analyses indicate the covariation is not specific to pain: a
+negative control in which pain predicts later depression, a depression exposure
+reproducing the pain result, a single general factor leaving no residual
+association, an equal correlation in healthy controls, and other non-motor items
+covarying with motor severity as strongly or more. The paper reports it as an
+index of general early non-motor burden rather than a pain-specific finding.
 
 The manuscript is in [`manuscript/`](manuscript/). Every number in it is
 substituted from [`outputs/paper/cifras.json`](outputs/paper/cifras.json), which
@@ -42,11 +49,17 @@ that hard, and the code addresses each with a separate estimator.
 
 | Question | Estimator | Script |
 | --- | --- | --- |
-| Does either precede the other? | Random-intercept cross-lagged panel model, contrasted with the classic model | `R/paper/01_direccionalidad.R` |
-| Does the surviving path hold up? | Seven adversarial robustness checks, including a negative control | `R/paper/02_refutacion_riclpm.R` |
-| Does motor phenotype modify it? | Stebbins TD/PIGD classification, pre-specified interaction plus stratified estimates | `R/paper/03_fenotipo.R` |
-| Level or slope, and what about dropout? | Mixed model with inverse probability of censoring weighting | `R/paper/04_longitudinal.R` |
-| What about dopaminergic dose? | Marginal structural model with stabilised IPTW, cross-checked by g-computation | `R/paper/05_msm_ledd.R` |
+| Does either precede the other? | Random-intercept cross-lagged panel model, contrasted with the classic model | `01_direccionalidad.R` |
+| Does the surviving path hold up? | Eight adversarial robustness checks, including two negative controls | `02_refutacion_riclpm.R` |
+| Does motor phenotype modify it? | Stebbins TD/PIGD classification, pre-specified interaction plus strata | `03_fenotipo.R` |
+| Level or slope, and what about dropout? | Mixed model plus weighted GEE with inverse probability of censoring weights | `04_longitudinal.R` |
+| What about dopaminergic dose? | Marginal structural model with stabilised IPTW | `05_msm_ledd.R` |
+| Which motor domain carries it? | Decomposition into five domains that sum to the total | `09_dominios.R` |
+| Is it specific to the disease? | Same model refitted in healthy control and prodromal cohorts | `10_controles_negativos.R` |
+| Eight mechanistic hypotheses | DAT-SPECT, general factor, ICC, CSF alpha-synuclein, GBA, limb gradient | `11_hipotesis.R` |
+| Is the participant flow consistent? | All five populations derived from one place | `12_flujo.R` |
+| How many tests were run? | Full inventory, classified primary / sensitivity / exploratory | `13_inventario.R` |
+| Analgesics, sex, motor complications, other non-motor items | Four clinical analyses requested at peer review | `14_clinicos.R` |
 
 The random-intercept model is the load-bearing piece. A conventional cross-lagged
 panel model on these data reports significant paths in **both** directions, which
@@ -99,16 +112,16 @@ MDS-UPDRS_Part_I_Patient_Questionnaire_04Nov2024.csv
 MDS-UPDRS_Part_II__Patient_Questionnaire_04Nov2024.csv
 MDS-UPDRS_Part_III_04Nov2024.csv
 PPMI_with_DBSYN.csv
+Concomitant_Medication_Log_04Nov2024.csv
 ```
 
 Then:
 
 ```bash
 export PPMI_RAW_DIR=/path/to/your/ppmi/files
-python3 python/01_data_prep.py          # builds the analytic tables
-python3 python/02_stebbins_phenotype.py # builds the TD/PIGD phenotype
-make paper                              # analyses, figures, numbers, manuscript
-Rscript tests/test_paper.R              # 52 regression tests
+make prep-paper   # analytic tables, phenotype, control cohorts, biomarkers, analgesics
+make paper        # 14 analyses, figures, numbers, manuscript, tests
+Rscript tests/test_paper.R   # 153 regression tests
 ```
 
 Part II lives in a different directory in some PPMI exports; set
@@ -130,7 +143,7 @@ Four mechanical safeguards, each added after a specific failure:
    used in the text; `R/paper/08_componer.R` substitutes them and aborts on any
    placeholder without a value. An earlier audit on the companion project found
    five different sample sizes circulating in drafts because they were typed.
-2. **52 regression tests** recompute or re-read every published result and fail if
+2. **153 regression tests** recompute or re-read every published result and fail if
    it moves. When a method changes a number, the test fails, which is the point:
    the test and the decision record are updated together.
 3. **Every decision that changed a result is recorded** in a dated architecture
@@ -138,6 +151,13 @@ Four mechanical safeguards, each added after a specific failure:
 4. **Continuous integration checks for data leakage** on every change: no
    versioned CSV may carry a `PATNO` column, and no raw PPMI file may be
    committed.
+
+### Independent review
+
+`docs/04-prompt-para-revision-independiente.md` is a self-contained brief for a
+reviewer with no prior involvement, listing what three internal rounds already
+fixed so the work is not repeated, and what remains open. It is written in
+Spanish, the project's working language.
 
 ### Decision records
 
@@ -151,6 +171,7 @@ Four mechanical safeguards, each added after a specific failure:
 | [0008](adr/0008-refutacion-y-preespecificacion.md) | Refuting two favourable results; pre-specification and multiplicity |
 | [0009](adr/0009-cambio-de-la-tesis-del-articulo.md) | Reframing the paper after the results |
 | [0010](adr/0010-atricion-y-confusion-variable-en-el-tiempo.md) | Attrition weighting and time-varying confounding |
+| [0011](adr/0011-el-mecanismo-no-es-dopaminergico-ni-especifico.md) | The covariation is not explained by dopaminergic loss, and specificity cannot be claimed |
 
 The decision records are in Spanish, the working language of the project. The
 manuscript, the figures and this README are in English.
