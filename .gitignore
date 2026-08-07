@@ -1,0 +1,48 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# PPMI DATA IS NEVER VERSIONED
+#
+# The PPMI Data Use Agreement prohibits redistributing participant-level data,
+# including in private repositories. Anyone reproducing this analysis must
+# download the data from https://www.ppmi-info.org under their own agreement.
+#
+# data/* rather than data/ because git cannot re-include a file whose parent
+# directory is excluded.
+# ─────────────────────────────────────────────────────────────────────────────
+data/*
+!data/.gitkeep
+
+# Raw PPMI files in any location
+PPMI_*.csv
+PPMI_*.xlsx
+MDS-UPDRS_*.csv
+MDS_UPDRS_*.csv
+*_Curated_*.csv
+
+# Outputs with one row per participant
+outputs/**/*_assignments.csv
+outputs/**/*_per_patient*.csv
+outputs/**/*_patient_level*.csv
+
+# Model objects can carry the data frame embedded
+outputs/**/models/
+*.rds
+*.RData
+*.rda
+
+# Environment
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+renv/library/
+renv/staging/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# System
+.DS_Store
+Thumbs.db
+~$*

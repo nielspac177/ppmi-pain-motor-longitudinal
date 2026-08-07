@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite it as below."
+title: "Pain and motor severity in early Parkinson disease: longitudinal analysis code"
+abstract: >-
+  Analysis code for a longitudinal study of pain and motor severity across six
+  annual assessments of the Parkinson's Progression Markers Initiative, using a
+  random-intercept cross-lagged panel model to separate stable between-person
+  covariation from within-person change, inverse probability of censoring
+  weighting for attrition, and a marginal structural model for time-varying
+  confounding by dopaminergic dose.
+type: software
+license: MIT
+repository-code: "https://github.com/nielspac177/ppmi-pain-motor-longitudinal"
+keywords:
+  - Parkinson disease
+  - pain
+  - PPMI
+  - cross-lagged panel model
+  - marginal structural model
+  - reproducible research

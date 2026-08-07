@@ -1,0 +1,110 @@
+name: CI
+
+# Verifies on every change that no PPMI data leaks and that the pipeline runs.
+# CI never has access to the real data: it always works against data-synth/.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  data-leak:
+    name: No PPMI data in the repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: No versioned CSV carries a PATNO column
+        run: |
+          set -euo pipefail
+          # data-synth/ is excluded on purpose: it is simulated data that mirrors
+          # the real column structure, PATNO included, and does not come from PPMI.
+          offenders=""
+          while IFS= read -r f; do
+            case "$f" in data-synth/*) continue ;; esac
+            if head -n 1 "$f" | grep -qw "PATNO"; then
+              offenders="${offenders}${f}\n"
+            fi
+          done < <(git ls-files '*.csv')
+
+          if [ -n "$offenders" ]; then
+            echo "::error::Participant-level data is versioned (violates the PPMI DUA):"
+            printf "%b" "$offenders"
+            exit 1
+          fi
+          echo "OK - no versioned CSV carries a PATNO column."
+
+      - name: No raw PPMI file is versioned
+        run: |
+          set -euo pipefail
+          if git ls-files | grep -Ei '(PPMI_.*\.(csv|xlsx)|MDS[-_]UPDRS_.*\.csv|_Curated_.*\.csv)'; then
+            echo "::error::Raw PPMI files are versioned."
+            exit 1
+          fi
+          echo "OK - no raw PPMI files."
+
+      - name: No local filesystem paths in tracked text
+        run: |
+          set -euo pipefail
+          if git ls-files '*.md' '*.R' '*.py' | xargs grep -l "/Users/" 2>/dev/null; then
+            echo "::error::A local filesystem path is committed."
+            exit 1
+          fi
+          echo "OK - no local paths."
+
+  pipeline:
+    name: Pipeline runs on synthetic data
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Python dependencies
+        run: pip install pandas numpy
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.4'
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: |
+            any::tidyverse
+            any::broom
+            any::lavaan
+            any::lme4
+            any::lmerTest
+            any::geepack
+            any::sandwich
+            any::lmtest
+            any::EValue
+            any::jsonlite
+            any::MASS
+
+      - name: Regenerate the synthetic data
+        run: python3 python/00_make_synthetic.py
+
+      - name: Synthetic data is reproducible (fixed seed)
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- data-synth/ || {
+            echo "::error::Regenerating the synthetic data produced a different result."
+            echo "The seed should make it deterministic. Check python/00_make_synthetic.py."
+            exit 1
+          }
+
+      - name: Analyses run end to end on synthetic data
+        env:
+          DATOS_DIR: ${{ github.workspace }}/data-synth
+        run: |
+          set -euo pipefail
+          Rscript R/paper/01_direccionalidad.R > /dev/null
+          Rscript R/paper/03_fenotipo.R > /dev/null
+          Rscript R/paper/04_longitudinal.R > /dev/null
+          echo "OK - the pipeline runs without PPMI access."

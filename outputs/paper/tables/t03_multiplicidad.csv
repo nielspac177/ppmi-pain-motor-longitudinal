@@ -1,0 +1,9 @@
+modelo,termino,estimacion,p,p_holm,p_bh
+UPDRS3_resto ~ dolor_int x fenotipo_bl,dolor_int:fenotipo_blPIGD,-2.2803781024170022,0.02823291107110729,0.22586328856885832,0.18716371332263154
+UPDRS3_resto ~ dolor_si x fenotipo_bl,dolor_si:fenotipo_blPIGD,-4.050064707106388,0.046790928330657885,0.3275364983146052,0.18716371332263154
+UPDRS3_resto ~ dolor_si x fenotipo_conc,dolor_si:fenotipo_concPIGD,-2.651804295044704,0.1837776063813157,1,0.46914183932236964
+UPDRS3 ~ dolor_si x fenotipo_conc,dolor_si:fenotipo_concPIGD,-2.5573878091363618,0.24316537070645125,1,0.46914183932236964
+UPDRS3 ~ dolor_int x fenotipo_bl,dolor_int:fenotipo_blPIGD,-1.2757632959483902,0.293213649576481,1,0.46914183932236964
+UPDRS3 ~ dolor_si x fenotipo_bl,dolor_si:fenotipo_blPIGD,-2.0234492039705065,0.3690100465781647,1,0.49201339543755296
+UPDRS3 ~ dolor_int x fenotipo_conc,dolor_int:fenotipo_concPIGD,0.29228906441535063,0.8036848071878356,1,0.8239412686697631
+UPDRS3_resto ~ dolor_int x fenotipo_conc,dolor_int:fenotipo_concPIGD,-0.2295288345149546,0.8239412686697631,1,0.8239412686697631
