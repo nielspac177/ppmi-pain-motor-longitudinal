@@ -58,8 +58,8 @@ seccion("Direccionalidad (ADR 0006)")
 sem <- T("t01_direccionalidad_sem.csv")
 clpm_b <- sem |> filter(modelo == "CLPM clasico", etiqueta == "b")
 clpm_c <- sem |> filter(modelo == "CLPM clasico", etiqueta == "c")
-ri_b <- sem |> filter(modelo == "RI-CLPM", etiqueta == "b")
-ri_c <- sem |> filter(modelo == "RI-CLPM", etiqueta == "c")
+ri_b <- sem |> filter(modelo == "RI-CLPM restringido", etiqueta == "b")
+ri_c <- sem |> filter(modelo == "RI-CLPM restringido", etiqueta == "c")
 
 comprobar("el CLPM clasico sigue haciendo significativas AMBAS direcciones",
           clpm_b$p[1] < 0.05 && clpm_c$p[1] < 0.05)
@@ -441,7 +441,7 @@ comprobar("el multigrupo ya NO restringe la dinamica entre cohortes",
             file.path(ROOT, "R", "paper", "10_controles_negativos.R"), warn = FALSE))))
 comprobar("el multigrupo coincide ahora con el modelo de un grupo", {
   mg <- T("t10_multigrupo_rho.csv"); un <- T("t01_correlacion_rasgo.csv")
-  abs(mg$r[grepl("Parkinson", mg$cohorte)][1] - un$r[1]) < 0.05
+  abs(mg$r[grepl("Parkinson", mg$cohorte)][1] - un$r[1]) < 0.02
 })
 
 inv <- T("t13_inventario_contrastes.csv")
@@ -461,7 +461,7 @@ if (file.exists(manu)) {
   comprobar("el resumen usa la correlacion del modelo PRIMARIO (libre)",
             grepl("rasgo_libre_r", txt))
   comprobar("la limitacion de fiabilidad esta en Limitaciones",
-            grepl("most important threat to the central claim", txt))
+            grepl("within-person reliability of the exposure is the", txt))
   comprobar("se cita el trabajo competidor de panel cruzado en PPMI",
             grepl("hodgson2026_ppmi_crosslag", txt))
   comprobar("no queda ningun encabezado colisionado con una frase",
@@ -543,13 +543,85 @@ if (file.exists(manu)) {
   comprobar("el manuscrito explica que el analgesico es descendiente del dolor",
             grepl("descendant of the exposure", txt))
   comprobar("ya no queda ninguna frase que diga que la carga general no se excluyo",
-            !grepl("remains live|we cannot exclude it", txt))
+            !grepl("remains live|burden[^.]{0,80}cannot exclude", txt))
+comprobar("el articulo SI declara que no puede excluir el estilo de respuesta",
+          grepl("reporting-style confound is the strongest available explanation", txt))
   comprobar("el resumen incorpora la no especificidad",
             grepl("not specific to pain", substr(txt, 1, 6000)))
   comprobar("el resumen reporta los tres indices de ajuste",
             grepl("fit_ri_libre_rmsea", txt))
   comprobar("las lineas convergentes ya no se presentan como independientes",
             !grepl("five independent line", txt))
+}
+
+
+# ------------------------------ REVISION INDEPENDIENTE (contexto limpio) ------
+seccion("Revision independiente")
+
+sl <- T("t01_sem_libre_por_ola.csv")
+comprobar("se extraen las vias del modelo PRIMARIO (libre), por ola", nrow(sl) >= 16)
+slr <- T("t01_sem_libre_resumen.csv")
+comprobar("en el modelo primario la via motor->dolor NO alcanza ninguna ola",
+          slr$olas_significativas[grepl("inverso", slr$parametro)][1] == 0)
+comprobar("en el modelo primario la via dolor->motor alcanza como mucho una ola",
+          slr$olas_significativas[grepl("directo", slr$parametro)][1] <= 1)
+
+ra <- T("t01_correlacion_rasgo_ajustada.csv")
+comprobar("la correlacion de rasgo se estima AJUSTADA por las basales", nrow(ra) == 1)
+comprobar("la correlacion de rasgo sobrevive al ajuste", ra$p[1] < 0.05)
+
+pw <- T("t04_pesos_ipcw.csv"); ptv <- T("t04_pesos_ipcw_tv.csv")
+comprobar("la comparacion de dispersion de pesos es DE frente a DE",
+          "de" %in% names(pw) && "de" %in% names(ptv))
+
+comprobar("la figura 2 ya NO lleva cifras de ajuste tecleadas",
+          !any(grepl("CFI 0.960 vs 0.877", readLines(
+            file.path(ROOT, "R", "paper", "06_figuras.R"), warn = FALSE))))
+
+if (file.exists(manu)) {
+  comprobar("Metodos ya NO afirma que todos los modelos lleven covariables",
+            !grepl("The adjustment set for all models", txt))
+  comprobar("el manuscrito declara que los modelos de panel van sin ajustar",
+            grepl("deliberately unadjusted", txt))
+  comprobar("la aritmetica de la DMCI ya no dice 'about four points'",
+            !grepl("it reaches about four points", txt))
+  comprobar("el manuscrito reporta el recorrido completo real (5,58)",
+            grepl("mcid_recorrido", txt))
+  comprobar("el manuscrito reporta el fallo del control del MoCA a nivel de rasgo",
+            grepl("moca_rasgo_r", txt))
+  comprobar("el resumen ya no dice 'equal correlation' en controles",
+            !grepl("an equal correlation in", txt))
+  comprobar("la dispersion del IPCW ya no afirma infraajuste",
+            !grepl("so the simpler model was indeed underfit", txt))
+}
+
+
+# ---------------------------- CITAS CORREGIDAS TRAS LA REVISION INDEPENDIENTE --
+seccion("Citas corregidas")
+
+refs2 <- fromJSON(file.path(ROOT, "manuscript", "referencias.json"), simplifyVector = FALSE)
+for (k in c("zolfaghari2022_selfreport", "silverdale2018_pain_survey",
+            "marek2011_ppmi", "yang2023_ppmi_dat", "lin2013_pain_incident_pd")) {
+  comprobar(paste("la referencia", k, "esta verificada"),
+            !is.null(refs2[[k]]) && grepl("PMID", refs2[[k]]))
+}
+if (file.exists(manu)) {
+  comprobar("VanderWeele 2019 ya no se cita para la escala del E-value",
+            !grepl("a distinction that is frequently mishandled", txt))
+  comprobar("Pautrat ya no se cita para una afirmacion sobre Braak",
+            !grepl("early Braak stages", txt))
+  comprobar("la prevalencia se presenta como replica y no como observacion nueva",
+            grepl("replicates the 57 per cent", txt))
+  comprobar("Ren y Rodriguez-Violante ya no sostienen la prediccion de modificacion",
+            grepl("which no prior study has tested", txt))
+  comprobar("se cita el confusor de estilo de respuesta en Limitaciones",
+            grepl("zolfaghari2022_selfreport", txt))
+  comprobar("se cita el comparador mas grande de la literatura",
+            grepl("silverdale2018_pain_survey", txt))
+  comprobar("el articulo acota su ventana frente a la precedencia prodromica",
+            grepl("lin2013_pain_incident_pd", txt))
+  comprobar("la fuente de datos de PPMI es la correcta",
+            grepl("marek2011_ppmi", txt))
 }
 
 # ------------------------------------------------------------------ CIERRE --

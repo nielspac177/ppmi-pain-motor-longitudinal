@@ -94,8 +94,8 @@ saca_sem <- function(mod, et, pref) {
 }
 saca_sem("CLPM clasico", "c", "clpm_dolor_motor")
 saca_sem("CLPM clasico", "b", "clpm_motor_dolor")
-saca_sem("RI-CLPM", "c", "riclpm_dolor_motor")
-saca_sem("RI-CLPM", "b", "riclpm_motor_dolor")
+saca_sem("RI-CLPM restringido", "c", "riclpm_dolor_motor")
+saca_sem("RI-CLPM restringido", "b", "riclpm_motor_dolor")
 
 ri <- T("t01_correlacion_rasgo.csv")
 poner("rasgo_r", n2(ri$r[1], 3))
@@ -535,3 +535,32 @@ poner("analg_prev", pct(100 * pa$proporcion[pa$medida == "alguna vez sin aspirin
 poner("analg_prev_todo", pct(100 * pa$proporcion[pa$medida == "alguna vez cualquiera"][1]))
 poner("analg_prev_opioide", pct(100 * pa$proporcion[pa$medida == "alguna vez opioide"][1]))
 write_json(C, ruta, auto_unbox = TRUE, pretty = TRUE)
+
+# --------------------------------------------- REVISION INDEPENDIENTE --------
+sl <- T("t01_sem_libre_resumen.csv")
+poner("libre_dm_olas_sig", ent(sl$olas_significativas[grepl("directo", sl$parametro)][1]))
+poner("libre_md_olas_sig", ent(sl$olas_significativas[grepl("inverso", sl$parametro)][1]))
+poner("libre_olas", ent(sl$olas[1]))
+poner("libre_dm_pmin", pv2(sl$p_min[grepl("directo", sl$parametro)][1]))
+poner("libre_md_pmin", pv2(sl$p_min[grepl("inverso", sl$parametro)][1]))
+
+ra <- T("t01_correlacion_rasgo_ajustada.csv")
+poner("rasgo_ajustado_r", n2(ra$r[1], 3))
+poner("rasgo_ajustado_p", pv2(ra$p[1]))
+
+pw <- T("t04_pesos_ipcw.csv"); ptv <- T("t04_pesos_ipcw_tv.csv")
+poner("ipcw_de_max_basal", n2(max(pw$de), 3))
+poner("ipcw_de_max_tv", n2(max(ptv$de), 3))
+
+r7 <- T("t02_refutacion_riclpm.csv") |>
+  filter(grepl("^R7", comprobacion), via == "exposicion(t-1) -> desenlace(t)")
+poner("moca_rasgo_r", n2(as.numeric(r7$r_rasgo[1]), 3))
+poner("moca_rasgo_p", pv2(as.numeric(r7$p_rasgo[1])))
+
+# El recorrido completo del item, calculado y no tecleado.
+niv <- as.numeric(T("t04_mixto.csv")$estimacion[1])
+poner("mcid_recorrido", n2(4 * niv, 2))
+poner("mcid_umbral", "4.63")
+
+write_json(C, ruta, auto_unbox = TRUE, pretty = TRUE)
+cat(sprintf("  %d cifras tras la revision independiente\n", length(C)))

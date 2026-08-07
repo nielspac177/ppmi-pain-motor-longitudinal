@@ -141,6 +141,12 @@ guardar(f1,
 # =============================================================================
 # FIGURE 2 — Directionality: classic CLPM vs RI-CLPM
 # =============================================================================
+# El pie de la Figura 2 llevaba las cifras de ajuste TECLEADAS, que es
+# exactamente lo que el pipeline de cifras existe para impedir. Se leen de su
+# tabla y se formatean aqui.
+ajuste_mod <- T("t01_ajuste_modelos.csv")
+fit_de <- function(pat, col) ajuste_mod[[col]][grepl(pat, ajuste_mod$modelo)][1]
+
 sem <- T("t01_direccionalidad_sem.csv") |>
   filter(grepl("cruzado", parametro)) |>
   mutate(
@@ -164,7 +170,7 @@ f2a <- ggplot(sem, aes(x = est_std, y = via)) +
   labs(x = "Standardised cross-lagged coefficient", y = NULL) +
   tema() + theme(axis.text.y = element_text(size = BASE - 0.5))
 
-ri <- T("t01_correlacion_rasgo.csv")
+ri <- T("t01_correlacion_rasgo_libre.csv") |> rename(p = p)
 f2b <- ggplot(ri, aes(x = r, y = "Stable between-person\ncorrelation of the two series")) +
   geom_vline(xintercept = 0, colour = GRIS, linewidth = 0.4, linetype = "22") +
   geom_point(shape = 21, size = 3.2, fill = MARINO, colour = NEGRO, stroke = 0.5) +
@@ -185,8 +191,11 @@ guardar(f2,
             "random intercepts, the motor-to-pain path is null and only a modest",
             "pain-to-motor path remains, which does not survive the robustness checks",
             "reported in the text. Bottom: the two series covary stably across people.",
-            "Filled circles denote p < 0.05. Model fit favours the RI-CLPM",
-            "(CFI 0.960 vs 0.877; RMSEA 0.067 vs 0.114).")),
+            "Filled circles denote p < 0.05. Model fit favours the random-intercept model",
+            sprintf("(CFI %s vs %s; RMSEA %s vs %s; SRMR %s vs %s).",
+                    n_en(fit_de("libre", "cfi"), 3), n_en(fit_de("^CLPM", "cfi"), 3),
+                    n_en(fit_de("libre", "rmsea"), 3), n_en(fit_de("^CLPM", "rmsea"), 3),
+                    n_en(fit_de("libre", "srmr"), 3), n_en(fit_de("^CLPM", "srmr"), 3)))),
           theme = theme(plot.title = element_text(face = "bold", size = BASE + 1,
                                                   family = "Helvetica"),
                         plot.caption = element_text(colour = GRIS_OSC, size = BASE - 2.5,

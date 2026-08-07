@@ -1,6 +1,7 @@
 tabla,categoria,n_p,n_sig
 t02_refutacion_riclpm.csv,exploratorio,30,14
 t04_atricion_predictores.csv,exploratorio,30,10
+t01_sem_libre_por_ola.csv,exploratorio,20,9
 t10_perfiles_dominio_cohorte.csv,exploratorio,15,7
 t14_paralelos_parte1.csv,exploratorio,12,7
 t02_parte2_vs_parte3.csv,exploratorio,8,6
@@ -18,6 +19,7 @@ t10_comparacion_correlaciones.csv,exploratorio,3,0
 t10_controles_negativos.csv,exploratorio,3,2
 t10_multigrupo_rho.csv,exploratorio,3,2
 t11_h8_miembros.csv,exploratorio,3,2
+t01_sem_libre_resumen.csv,exploratorio,2,1
 t03_ordinal_dolor_fenotipo.csv,exploratorio,2,1
 t04_controles_negativos.csv,exploratorio,2,1
 t10_multigrupo_dif.csv,exploratorio,2,0
@@ -26,6 +28,7 @@ t11_h6_h7_interaccion.csv,exploratorio,2,0
 t14_parte4_estratos.csv,exploratorio,2,2
 t14_parte4.csv,exploratorio,2,2
 t14_sexo_estratos.csv,exploratorio,2,2
+t01_correlacion_rasgo_ajustada.csv,exploratorio,1,1
 t05_estatus_regla.csv,exploratorio,1,0
 t09_diferencial_gds.csv,exploratorio,1,1
 t10_multigrupo_wald.csv,exploratorio,1,0

@@ -373,8 +373,47 @@ extraer_sem <- function(obj, etiqueta_modelo) {
   )
 }
 
+# El modelo primario es el LIBRE. Extraer solo del restringido dejaba todas las
+# afirmaciones direccionales del articulo apoyadas en una especificacion cuyas
+# restricciones el propio articulo reporta como rechazadas. Se extraen las vias
+# del libre por ola y se resume su comportamiento.
+extraer_libre <- function(obj, etiqueta) {
+  if (is.null(obj)) return(NULL)
+  pe <- obj$pe
+  filas <- pe[grepl("^[abce][2-6]$", pe$label) & pe$op == "~", ]
+  if (!nrow(filas)) return(NULL)
+  tipo <- c(a = "dolor(t-1) -> dolor(t) [autorregresivo]",
+            b = "motor(t-1) -> dolor(t) [cruzado inverso]",
+            c = "dolor(t-1) -> motor(t) [cruzado directo]",
+            e = "motor(t-1) -> motor(t) [autorregresivo]")
+  tibble(modelo = etiqueta,
+         parametro = unname(tipo[substr(filas$label, 1, 1)]),
+         ola = as.integer(substr(filas$label, 2, 2)),
+         etiqueta = filas$label,
+         estimacion = filas$est, ee = filas$se,
+         ic_bajo = filas$ci.lower, ic_alto = filas$ci.upper,
+         p = filas$pvalue, est_std = filas$std.all)
+}
+
+sem_libre <- extraer_libre(riclpm_libre, "RI-CLPM libre (PRIMARIO)")
+if (!is.null(sem_libre)) {
+  subtitulo("Rezagos cruzados del modelo PRIMARIO (libre), por ola")
+  print(as.data.frame(sem_libre |> filter(grepl("cruzado", parametro)) |>
+                        select(parametro, ola, estimacion, ic_bajo, ic_alto, p)),
+        digits = 4)
+  resumen_libre <- sem_libre |>
+    filter(grepl("cruzado", parametro)) |>
+    group_by(parametro) |>
+    summarise(olas = n(), olas_significativas = sum(p < ALPHA),
+              p_min = min(p), .groups = "drop")
+  subtitulo("Resumen: en cuantas olas alcanza significacion cada direccion")
+  print(as.data.frame(resumen_libre), digits = 4)
+  guardar_tabla(sem_libre, "t01_sem_libre_por_ola.csv")
+  guardar_tabla(resumen_libre, "t01_sem_libre_resumen.csv")
+}
+
 sem_tab <- bind_rows(extraer_sem(clpm, "CLPM clasico"),
-                     extraer_sem(riclpm, "RI-CLPM"))
+                     extraer_sem(riclpm, "RI-CLPM restringido"))
 subtitulo("Rezagos cruzados: CLPM frente a RI-CLPM")
 print(as.data.frame(sem_tab |> select(modelo, parametro, estimacion, ic_bajo, ic_alto, p, est_std)),
       digits = 4)
@@ -388,6 +427,7 @@ if (!is.null(riclpm)) {
   ri_d <- pe[pe$lhs == "RId" & pe$rhs == "RId" & pe$op == "~~", ]
   ri_m <- pe[pe$lhs == "RIm" & pe$rhs == "RIm" & pe$op == "~~", ]
   r_ri <- ri$est[1] / sqrt(ri_d$est[1] * ri_m$est[1])
+  ri_cor_valor <<- r_ri
   subtitulo("Correlacion de los interceptos aleatorios (rasgo estable)")
   cat(sprintf("  covarianza = %.4f (EE %.4f, p = %.4g)\n", ri$est[1], ri$se[1], ri$pvalue[1]))
   cat(sprintf("  varianza del rasgo de dolor = %.4f\n", ri_d$est[1]))
@@ -434,6 +474,43 @@ if (!is.null(riclpm_libre)) {
   subtitulo("Correlacion de rasgo en el modelo primario (libre)")
   print(as.data.frame(rasgo_libre), digits = 4)
   guardar_tabla(rasgo_libre, "t01_correlacion_rasgo_libre.csv")
+}
+
+# ---------------------------------------------------------------------------
+# La correlacion de rasgo del RI-CLPM es CRUDA: el modelo no lleva covariables.
+# Para las vias INTRAPERSONALES eso es correcto y es la virtud del modelo, porque
+# los interceptos aleatorios absorben todo confusor invariante en el tiempo. Pero
+# la correlacion ENTRE personas, que es el resultado positivo del articulo, no
+# esta protegida por ese argumento: la edad, el sexo y la duracion causan
+# plausiblemente las dos series. Se estima tambien ajustada, regresando los dos
+# interceptos sobre las basales dentro del propio modelo.
+# ---------------------------------------------------------------------------
+titulo("4b. Correlacion de rasgo AJUSTADA por las covariables basales")
+
+bl_cov <- d |> filter(EVENT_ID == "BL") |>
+  select(PATNO, edad = age_yrs, varon = sex_male, dur = disease_yrs, moca = MoCA)
+ancho_aj <- ancho |> inner_join(bl_cov, by = "PATNO") |>
+  mutate(across(c(edad, dur, moca), ~ as.numeric(scale(.x))))
+
+riclpm_aj_txt <- paste(riclpm_txt,
+  "RId ~ edad + varon + dur + moca",
+  "RIm ~ edad + varon + dur + moca", sep = "\n")
+
+fit_aj <- try(lavaan::sem(riclpm_aj_txt, data = ancho_aj, missing = "fiml",
+                          estimator = "MLR", fixed.x = FALSE), silent = TRUE)
+if (!inherits(fit_aj, "try-error") && lavaan::lavInspect(fit_aj, "converged")) {
+  pe_aj <- lavaan::parameterEstimates(fit_aj, standardized = TRUE)
+  ri_aj <- pe_aj[pe_aj$lhs == "RId" & pe_aj$rhs == "RIm" & pe_aj$op == "~~", ]
+  rasgo_aj <- tibble(modelo = "RI-CLPM con interceptos ajustados por basales",
+                     r = ri_aj$std.all[1], ee = ri_aj$se[1], p = ri_aj$pvalue[1])
+  print(as.data.frame(rasgo_aj), digits = 4)
+  cat(sprintf("\n  Cruda %.4f frente a ajustada %.4f\n",
+              ri_cor_valor, rasgo_aj$r[1]))
+  cat(if (rasgo_aj$p[1] < ALPHA)
+        "  La correlacion de rasgo SOBREVIVE al ajuste por las basales.\n"
+      else
+        "  La correlacion de rasgo NO sobrevive al ajuste: hay que decirlo.\n")
+  guardar_tabla(rasgo_aj, "t01_correlacion_rasgo_ajustada.csv")
 }
 
 guardar_tabla(sintesis, "t01_direccionalidad_rezagos.csv")
