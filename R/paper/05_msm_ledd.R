@@ -28,7 +28,7 @@
 
 source(file.path(Sys.getenv("TESIS_ROOT", unset = getwd()), "R", "paper", "00_comun.R"))
 suppressPackageStartupMessages({
-  library(geepack); library(sandwich); library(lmtest); library(boot)
+  library(geepack); library(sandwich); library(lmtest)
 })
 
 set.seed(SEED)

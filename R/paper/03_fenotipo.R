@@ -22,7 +22,7 @@
 # =============================================================================
 
 source(file.path(Sys.getenv("TESIS_ROOT", unset = getwd()), "R", "paper", "00_comun.R"))
-suppressPackageStartupMessages({ library(sandwich); library(lmtest); library(emmeans) })
+suppressPackageStartupMessages({ library(sandwich); library(lmtest) })
 
 set.seed(SEED)
 titulo("ANALISIS 1 — EL FENOTIPO MOTOR TD/PIGD")
