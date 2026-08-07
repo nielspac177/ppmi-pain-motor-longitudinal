@@ -156,10 +156,15 @@ Four mechanical safeguards, each added after a specific failure:
 
 ### Independent review
 
-`docs/04-prompt-para-revision-independiente.md` is a self-contained brief for a
-reviewer with no prior involvement, listing what three internal rounds already
-fixed so the work is not repeated, and what remains open. It is written in
-Spanish, the project's working language.
+Three self-contained briefs for reviewers with no prior involvement, each
+listing what earlier rounds already fixed so the work is not repeated, and what
+remains open. They are written in Spanish, the project's working language.
+
+| Brief | What it is for |
+| --- | --- |
+| [`docs/04-prompt-para-revision-independiente.md`](docs/04-prompt-para-revision-independiente.md) | A single independent review pass |
+| [`docs/05-encargo-de-continuacion.md`](docs/05-encargo-de-continuacion.md) | The full work cycle: review, analyse, search, redraw figures, decide when to stop |
+| [`docs/06-bucle-de-revision-por-pares.md`](docs/06-bucle-de-revision-por-pares.md) | Repeated review rounds with rotating reviewer roles and per-round literature revalidation |
 
 ### Decision records
 
