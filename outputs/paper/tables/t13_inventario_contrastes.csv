@@ -14,6 +14,8 @@ t11_h3_cargas.csv,exploratorio,6,5
 t09_dominios_control_gds.csv,exploratorio,5,3
 t11_h6_h7_estratos.csv,exploratorio,4,2
 t14_analgesicos.csv,exploratorio,4,4
+t15_dos_desenlaces.csv,exploratorio,4,4
+t15_indice_alternativo.csv,exploratorio,4,4
 t04_mixto_ipcw_tv.csv,exploratorio,3,2
 t10_comparacion_correlaciones.csv,exploratorio,3,0
 t10_controles_negativos.csv,exploratorio,3,2
@@ -28,6 +30,7 @@ t11_h6_h7_interaccion.csv,exploratorio,2,0
 t14_parte4_estratos.csv,exploratorio,2,2
 t14_parte4.csv,exploratorio,2,2
 t14_sexo_estratos.csv,exploratorio,2,2
+t15_ajuste_por_estilo.csv,exploratorio,2,2
 t01_correlacion_rasgo_ajustada.csv,exploratorio,1,1
 t05_estatus_regla.csv,exploratorio,1,0
 t09_diferencial_gds.csv,exploratorio,1,1
@@ -36,6 +39,7 @@ t11_h3_ajuste.csv,exploratorio,1,1
 t11_h3_anidado.csv,exploratorio,1,0
 t14_analgesico_motor.csv,exploratorio,1,1
 t14_sexo_interaccion.csv,exploratorio,1,0
+t15_estilo_dolor.csv,exploratorio,1,1
 t01_direccionalidad_sem.csv,primario,8,7
 t03_multiplicidad.csv,primario,8,2
 t04_mixto.csv,primario,3,2

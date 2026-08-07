@@ -564,3 +564,29 @@ poner("mcid_umbral", "4.63")
 
 write_json(C, ruta, auto_unbox = TRUE, pretty = TRUE)
 cat(sprintf("  %d cifras tras la revision independiente\n", length(C)))
+
+# ------------------------------------------- ESTILO DE REPORTE ---------------
+ee <- T("t15_estilo_dolor.csv")
+poner("estilo_dolor_beta", n2(ee$beta_de[1], 3))
+poner("estilo_dolor_ic", ic2(ee$ic_bajo[1], ee$ic_alto[1], 3))
+poner("estilo_dolor_p", pv2(ee$p[1]))
+es <- T("t15_estabilidad_estilo.csv")
+poner("estilo_estabilidad", n2(es$r[1], 3))
+d2 <- T("t15_dos_desenlaces.csv")
+for (i in seq_len(nrow(d2))) {
+  k <- if (grepl("III", d2$desenlace[i])) "p3" else "p2"
+  poner(paste0("estilo_", k, "_sin"), n2(d2$sin_estilo[i], 3))
+  poner(paste0("estilo_", k, "_con"), n2(d2$con_estilo[i], 3))
+  poner(paste0("estilo_", k, "_p_con"), pv2(d2$p_con[i]))
+  poner(paste0("estilo_", k, "_aten"), pct(d2$atenuacion_pct[i], 0))
+}
+d3 <- T("t15_indice_alternativo.csv")
+for (i in seq_len(nrow(d3))) {
+  k <- if (grepl("III", d3$desenlace[i])) "p3" else "p2"
+  poner(paste0("alt_", k, "_sin"), n2(d3$sin_indice[i], 3))
+  poner(paste0("alt_", k, "_con"), n2(d3$con_indice[i], 3))
+  poner(paste0("alt_", k, "_p_con"), pv2(d3$p_con[i]))
+  poner(paste0("alt_", k, "_aten"), pct(d3$atenuacion_pct[i], 0))
+}
+write_json(C, ruta, auto_unbox = TRUE, pretty = TRUE)
+cat(sprintf("  %d cifras tras el estilo de reporte\n", length(C)))

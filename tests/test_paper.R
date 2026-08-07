@@ -544,8 +544,15 @@ if (file.exists(manu)) {
             grepl("descendant of the exposure", txt))
   comprobar("ya no queda ninguna frase que diga que la carga general no se excluyo",
             !grepl("remains live|burden[^.]{0,80}cannot exclude", txt))
-comprobar("el articulo SI declara que no puede excluir el estilo de respuesta",
-          grepl("reporting-style confound is the strongest available explanation", txt))
+# Esta prueba exigia que el articulo CONCEDIERA el confusor de estilo. Desde que
+# se contrasta (R/paper/15_estilo_de_reporte.R), conceder ya no es lo correcto:
+# lo correcto es reportar el contraste y declarar lo que sigue sin poder
+# descartarse. La prueba se actualiza al estado nuevo, no se revierte el avance.
+comprobar("el articulo declara que el confusor de estilo es serio y lo contrasta",
+          grepl("most serious alternative explanation", txt) &&
+            grepl("We tested it rather than conceding it", txt))
+comprobar("el articulo declara lo que el contraste NO descarta",
+          grepl("reporting tendency that tracks genuine examined severity", txt))
   comprobar("el resumen incorpora la no especificidad",
             grepl("not specific to pain", substr(txt, 1, 6000)))
   comprobar("el resumen reporta los tres indices de ajuste",
@@ -622,6 +629,44 @@ if (file.exists(manu)) {
             grepl("lin2013_pain_incident_pd", txt))
   comprobar("la fuente de datos de PPMI es la correcta",
             grepl("marek2011_ppmi", txt))
+}
+
+
+# ------------------------------------------- ESTILO DE REPORTE ----------------
+seccion("El confusor de estilo de reporte")
+
+ee <- T("t15_estilo_dolor.csv")
+comprobar("el indice de estilo se asocia con el dolor (el confusor existe)",
+          ee$beta_de[1] > 0.2 && ee$p[1] < 0.001)
+es <- T("t15_estabilidad_estilo.csv")
+comprobar("el indice de estilo es estable en el tiempo (es un rasgo, no ruido)",
+          es$r[1] > 0.5)
+
+d2 <- T("t15_dos_desenlaces.csv")
+comprobar("el estilo NO explica la asociacion con la Parte III explorada",
+          d2$p_con[grepl("III", d2$desenlace)][1] < 0.05)
+comprobar("el estilo SI explica la mayor parte de la asociacion con la Parte II",
+          d2$atenuacion_pct[grepl("II \\(auto", d2$desenlace)][1] > 50)
+comprobar("la atenuacion es mucho mayor en la autoinformada que en la explorada",
+          d2$atenuacion_pct[grepl("II \\(auto", d2$desenlace)][1] >
+            d2$atenuacion_pct[grepl("III", d2$desenlace)][1] + 40)
+
+d3 <- T("t15_indice_alternativo.csv")
+comprobar("el indice alternativo NO es ortogonal a la Parte III por construccion",
+          d3$atenuacion_pct[grepl("III", d3$desenlace)][1] > 0)
+comprobar("con el indice alternativo la asociacion explorada sigue en pie",
+          d3$p_con[grepl("III", d3$desenlace)][1] < 0.05)
+comprobar("con el indice alternativo la atenuacion sigue siendo mayor en la Parte II",
+          d3$atenuacion_pct[grepl("II \\(auto", d3$desenlace)][1] >
+            d3$atenuacion_pct[grepl("III", d3$desenlace)][1])
+
+if (file.exists(manu)) {
+  comprobar("el manuscrito CONTRASTA el estilo de reporte y no solo lo concede",
+            grepl("We tested it rather than conceding it", txt))
+  comprobar("el manuscrito declara la ortogonalidad por construccion del primer indice",
+            grepl("orthogonal to it by construction", txt))
+  comprobar("la seccion de la Parte II ya no queda abierta",
+            !grepl("Two readings are available and we cannot separate them here", txt))
 }
 
 # ------------------------------------------------------------------ CIERRE --
